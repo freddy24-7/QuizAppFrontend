@@ -1,5 +1,5 @@
-import { Button } from "./ui/button";
-import { useNavigate } from "react-router-dom";
+import { Button } from './ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const Home = () => {
               Create a quiz and get your friends or family to play!
             </p>
             <Button
-              onClick={() => navigate("/quiz")}
+              onClick={() => navigate('/quiz')}
               className="bg-sky-600 hover:bg-sky-700 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 w-fit"
               aria-label="Start the quiz"
             >
@@ -40,4 +40,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;
