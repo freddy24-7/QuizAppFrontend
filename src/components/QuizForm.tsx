@@ -206,20 +206,21 @@ const QuizForm = () => {
       onClose={() => setCurrentStep(null)}
       title="Basic Quiz Information"
     >
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="title">Quiz Title</Label>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="title" className="text-base">Quiz Title</Label>
           <Input
             id="title"
             value={quizData.title}
             onChange={handleTitleChange}
             placeholder="Enter quiz title"
             required
+            className="h-12"
           />
         </div>
 
-        <div>
-          <Label htmlFor="duration">Duration (seconds)</Label>
+        <div className="space-y-2">
+          <Label htmlFor="duration" className="text-base">Duration (seconds)</Label>
           <Input
             id="duration"
             type="number"
@@ -227,20 +228,23 @@ const QuizForm = () => {
             onChange={handleDurationChange}
             min="30"
             required
+            className="h-12"
           />
         </div>
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-4 pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => setCurrentStep(null)}
+            className="px-6"
           >
             Cancel
           </Button>
           <Button
             type="button"
             onClick={() => setCurrentStep('questions')}
+            className="px-6"
           >
             Next: Add Questions
           </Button>
@@ -256,15 +260,21 @@ const QuizForm = () => {
       title="Add Questions"
       className="max-h-[90vh] overflow-y-auto"
     >
-      <div className="space-y-6">
+      <div className="space-y-8">
+        <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg mb-6">
+          <p className="text-sky-700 dark:text-sky-300 text-sm">
+            <span className="font-semibold">Tip:</span> For each question, mark the checkbox next to the correct answer(s). You can select multiple correct answers if needed.
+          </p>
+        </div>
+
         {quizData.questions.map((question, questionIndex) => (
           <div
             key={questionIndex}
-            className="p-4 border border-sky-200 rounded-lg space-y-4"
+            className="p-6 border border-sky-200 rounded-lg space-y-6"
           >
             <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <Label>Question {questionIndex + 1}</Label>
+              <div className="flex-1 space-y-2">
+                <Label className="text-base">Question {questionIndex + 1}</Label>
                 <Textarea
                   value={question.text}
                   onChange={(e) =>
@@ -272,6 +282,7 @@ const QuizForm = () => {
                   }
                   placeholder="Enter your question"
                   required
+                  className="min-h-[100px]"
                 />
               </div>
               {quizData.questions.length > 1 && (
@@ -286,20 +297,44 @@ const QuizForm = () => {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Mark correct answer(s)</span>
+              </div>
               {question.options.map((option, optionIndex) => (
                 <div
                   key={optionIndex}
                   className="flex items-center space-x-4"
                 >
-                  <Checkbox
-                    id={`correct-${questionIndex}-${optionIndex}`}
-                    checked={option.correct}
-                    onCheckedChange={() =>
-                      handleCorrectOptionChange(questionIndex, optionIndex)
-                    }
-                    className="text-sky-600"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`correct-${questionIndex}-${optionIndex}`}
+                      checked={option.correct}
+                      onCheckedChange={() =>
+                        handleCorrectOptionChange(questionIndex, optionIndex)
+                      }
+                      className="text-sky-600"
+                    />
+                    <Label
+                      htmlFor={`correct-${questionIndex}-${optionIndex}`}
+                      className="text-sm text-gray-600 dark:text-gray-400"
+                    >
+                      Correct
+                    </Label>
+                  </div>
                   <Input
                     value={option.text}
                     onChange={(e) =>
@@ -311,6 +346,7 @@ const QuizForm = () => {
                     }
                     placeholder={`Option ${optionIndex + 1}`}
                     required
+                    className="h-12"
                   />
                   {question.options.length > 2 && (
                     <Button
@@ -329,7 +365,7 @@ const QuizForm = () => {
                 onClick={() => addOption(questionIndex)}
                 variant="outline"
                 size="sm"
-                className="mt-2"
+                className="mt-4"
               >
                 Add Option
               </Button>
@@ -337,25 +373,28 @@ const QuizForm = () => {
           </div>
         ))}
 
-        <div className="flex justify-between">
+        <div className="flex justify-between pt-4">
           <Button
             type="button"
             onClick={addQuestion}
             variant="outline"
+            className="px-6"
           >
             Add Question
           </Button>
-          <div className="space-x-2">
+          <div className="space-x-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setCurrentStep('basic')}
+              className="px-6"
             >
               Back
             </Button>
             <Button
               type="button"
               onClick={() => setCurrentStep('participants')}
+              className="px-6"
             >
               Next: Add Participants
             </Button>
@@ -371,7 +410,7 @@ const QuizForm = () => {
       onClose={() => setCurrentStep(null)}
       title="Add Participants"
     >
-      <div className="space-y-4">
+      <div className="space-y-6">
         {quizData.participants.map((participant, index) => (
           <div key={index} className="flex items-center space-x-4">
             <Input
@@ -379,6 +418,7 @@ const QuizForm = () => {
               onChange={(e) => handleParticipantChange(index, e.target.value)}
               placeholder="Enter phone number"
               required
+              className="h-12"
             />
             {quizData.participants.length > 1 && (
               <Button
@@ -392,25 +432,28 @@ const QuizForm = () => {
           </div>
         ))}
 
-        <div className="flex justify-between">
+        <div className="flex justify-between pt-4">
           <Button
             type="button"
             onClick={addParticipant}
             variant="outline"
+            className="px-6"
           >
             Add Participant
           </Button>
-          <div className="space-x-2">
+          <div className="space-x-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setCurrentStep('questions')}
+              className="px-6"
             >
               Back
             </Button>
             <Button
               type="submit"
               onClick={handleSubmit}
+              className="px-6"
             >
               Create Quiz
             </Button>
@@ -421,49 +464,49 @@ const QuizForm = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-4">Create a New Quiz</h1>
-        <p className="text-gray-600 dark:text-gray-400">
+    <div className="max-w-4xl mx-auto p-8">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4">Create a New Quiz</h1>
+        <p className="text-gray-600 dark:text-gray-400 text-lg">
           Follow the steps below to create your quiz
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-6 mb-12">
         <Button
           onClick={() => setCurrentStep('basic')}
           variant={currentStep === 'basic' ? 'default' : 'outline'}
-          className="h-24 flex flex-col items-center justify-center"
+          className="h-32 flex flex-col items-center justify-center space-y-2"
         >
-          <span className="text-lg">1</span>
-          <span>Basic Info</span>
+          <span className="text-2xl">1</span>
+          <span className="text-lg">Basic Info</span>
         </Button>
         <Button
           onClick={() => setCurrentStep('questions')}
           variant={currentStep === 'questions' ? 'default' : 'outline'}
-          className="h-24 flex flex-col items-center justify-center"
+          className="h-32 flex flex-col items-center justify-center space-y-2"
         >
-          <span className="text-lg">2</span>
-          <span>Questions</span>
+          <span className="text-2xl">2</span>
+          <span className="text-lg">Questions</span>
         </Button>
         <Button
           onClick={() => setCurrentStep('participants')}
           variant={currentStep === 'participants' ? 'default' : 'outline'}
-          className="h-24 flex flex-col items-center justify-center"
+          className="h-32 flex flex-col items-center justify-center space-y-2"
         >
-          <span className="text-lg">3</span>
-          <span>Participants</span>
+          <span className="text-2xl">3</span>
+          <span className="text-lg">Participants</span>
         </Button>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-6">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6">
           {success}
         </div>
       )}
