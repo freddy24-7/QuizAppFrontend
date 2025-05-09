@@ -6,6 +6,8 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Modal } from './ui/modal';
+import InviteParticipants from './InviteParticipants';
+import { formatPhoneNumber } from '../utils/whatsappUtils';
 
 interface Option {
   text: string;
@@ -46,7 +48,8 @@ const QuizForm = () => {
 
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | null>(null);
+  const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | 'invite' | null>(null);
+  const [createdQuizId, setCreatedQuizId] = useState<string>('');
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuizData({ ...quizData, title: e.target.value });
@@ -122,8 +125,10 @@ const QuizForm = () => {
   };
 
   const handleParticipantChange = (index: number, phoneNumber: string) => {
+    // Only allow digits and limit to 10 characters
+    const cleaned = phoneNumber.replace(/\D/g, '').slice(0, 10);
     const newParticipants = [...quizData.participants];
-    newParticipants[index].phoneNumber = phoneNumber;
+    newParticipants[index].phoneNumber = cleaned;
     setQuizData({ ...quizData, participants: newParticipants });
   };
 
@@ -140,6 +145,16 @@ const QuizForm = () => {
         (_, i) => i !== index,
       );
       setQuizData({ ...quizData, participants: newParticipants });
+    }
+  };
+
+  const validatePhoneNumbers = () => {
+    for (const participant of quizData.participants) {
+      try {
+        formatPhoneNumber(participant.phoneNumber);
+      } catch (err) {
+        throw new Error(`Invalid phone number format. Numbers should be 8 digits starting with 06 (e.g., 06123456)`);
+      }
     }
   };
 
@@ -172,32 +187,40 @@ const QuizForm = () => {
         throw new Error('Please fill in all phone numbers');
       }
 
-      await axios.post('http://localhost:8080/api/quizzes', quizData);
+      // Validate phone number format
+      validatePhoneNumbers();
+
+      const response = await axios.post('http://localhost:8080/api/quizzes', quizData);
+      const quizId = response.data.id;
+      setCreatedQuizId(quizId);
       setSuccess('Quiz created successfully!');
-      setCurrentStep(null);
-      
-      // Clear form
-      setQuizData({
-        title: '',
-        durationInSeconds: 120,
-        questions: [
-          {
-            text: '',
-            options: [
-              { text: '', correct: false },
-              { text: '', correct: false },
-            ],
-          },
-        ],
-        participants: [{ phoneNumber: '' }],
-      });
+      setCurrentStep('invite');
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'An error occurred while creating the quiz',
+          : 'An error occurred while creating the quiz'
       );
     }
+  };
+
+  const handleInvitesSent = () => {
+    setCurrentStep(null);
+    // Clear form
+    setQuizData({
+      title: '',
+      durationInSeconds: 120,
+      questions: [
+        {
+          text: '',
+          options: [
+            { text: '', correct: false },
+            { text: '', correct: false },
+          ],
+        },
+      ],
+      participants: [{ phoneNumber: '' }],
+    });
   };
 
   const renderBasicInfoModal = () => (
@@ -411,15 +434,30 @@ const QuizForm = () => {
       title="Add Participants"
     >
       <div className="space-y-6">
+        <div className="bg-sky-50 p-4 rounded-lg mb-4">
+          <p className="text-sky-700 text-sm">
+            Enter 10-digit phone numbers starting with 06 (e.g., 0612345678)
+          </p>
+        </div>
+
         {quizData.participants.map((participant, index) => (
           <div key={index} className="flex items-center space-x-4">
-            <Input
-              value={participant.phoneNumber}
-              onChange={(e) => handleParticipantChange(index, e.target.value)}
-              placeholder="Enter phone number"
-              required
-              className="h-12"
-            />
+            <div className="flex-1">
+              <Input
+                value={participant.phoneNumber}
+                onChange={(e) => handleParticipantChange(index, e.target.value)}
+                placeholder="0612345678"
+                required
+                className="h-12"
+                maxLength={10}
+                pattern="06\d{8}"
+              />
+              {participant.phoneNumber && !participant.phoneNumber.match(/^06\d{8}$/) && (
+                <p className="text-red-500 text-sm mt-1">
+                  Must be 10 digits starting with 06
+                </p>
+              )}
+            </div>
             {quizData.participants.length > 1 && (
               <Button
                 type="button"
@@ -459,6 +497,26 @@ const QuizForm = () => {
             </Button>
           </div>
         </div>
+      </div>
+    </Modal>
+  );
+
+  const renderInviteModal = () => (
+    <Modal
+      isOpen={currentStep === 'invite'}
+      onClose={() => setCurrentStep(null)}
+      title="Send Invites"
+    >
+      <div className="space-y-6">
+        <div className="bg-green-50 p-4 rounded-lg">
+          <p className="text-green-600">Quiz created successfully! Now you can send invites to the participants.</p>
+        </div>
+        
+        <InviteParticipants
+          quizId={createdQuizId}
+          participants={quizData.participants}
+          onInvitesSent={handleInvitesSent}
+        />
       </div>
     </Modal>
   );
@@ -505,7 +563,7 @@ const QuizForm = () => {
         </div>
       )}
 
-      {success && (
+      {success && currentStep !== 'invite' && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6">
           {success}
         </div>
@@ -514,6 +572,7 @@ const QuizForm = () => {
       {renderBasicInfoModal()}
       {renderQuestionsModal()}
       {renderParticipantsModal()}
+      {renderInviteModal()}
     </div>
   );
 };
