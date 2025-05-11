@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { generateWhatsAppLink } from '../utils/whatsappUtils';
+import { generateWhatsAppLink, generateQuizInviteMessage } from '../utils/whatsappUtils';
 
 interface InviteParticipantsProps {
   quizId: string;
@@ -13,28 +13,78 @@ const InviteParticipants: React.FC<InviteParticipantsProps> = ({
   participants,
   onInvitesSent,
 }) => {
-  const handleWhatsAppInvites = () => {
-    participants.forEach((participant) => {
-      const whatsappLink = generateWhatsAppLink(participant.phoneNumber, quizId);
-      window.open(whatsappLink, '_blank');
-    });
-    onInvitesSent();
+  const [isSending, setIsSending] = useState(false);
+
+  const handleWhatsAppInvites = async () => {
+    console.log('Starting invite process...');
+    console.log('Quiz ID:', quizId);
+    console.log('Participants:', participants);
+
+    if (!quizId) {
+      console.error('No quiz ID available');
+      return;
+    }
+
+    if (!participants || participants.length === 0) {
+      console.error('No participants available');
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      // Generate the invite message first
+      const message = generateQuizInviteMessage(quizId);
+      console.log('Generated message:', message);
+      
+      // Process participants one at a time
+      for (const participant of participants) {
+        console.log('Processing participant:', participant);
+        if (!participant.phoneNumber) {
+          console.error('Participant has no phone number:', participant);
+          continue;
+        }
+        
+        const whatsappLink = generateWhatsAppLink(participant.phoneNumber, message);
+        console.log('Generated WhatsApp link:', whatsappLink);
+        
+        // Open WhatsApp link
+        window.open(whatsappLink, '_blank');
+        
+        // Wait for 2 seconds before opening the next link
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      onInvitesSent();
+    } catch (error) {
+      console.error('Error sending invites:', error);
+    } finally {
+      setIsSending(false);
+    }
   };
+
+  const isButtonDisabled = !quizId || !participants || participants.length === 0 || isSending;
+  console.log('Button disabled state:', isButtonDisabled);
+  console.log('Current state:', { quizId, participantsCount: participants?.length, isSending });
 
   return (
     <div className="space-y-6">
       <div className="flex justify-center">
         <Button
           onClick={handleWhatsAppInvites}
-          disabled={participants.length === 0}
+          disabled={isButtonDisabled}
           className="w-full max-w-md"
         >
-          {`Send ${participants.length} WhatsApp Invite${participants.length !== 1 ? 's' : ''}`}
+          {isSending 
+            ? 'Sending Invites...' 
+            : `Send ${participants?.length || 0} WhatsApp Invite${participants?.length !== 1 ? 's' : ''}`}
         </Button>
       </div>
 
       <p className="text-sm text-gray-500 text-center">
-        This will open WhatsApp with a pre-filled message for each participant
+        {isSending 
+          ? 'Please wait while we send the invites...' 
+          : 'This will open WhatsApp with a pre-filled message for each participant'}
       </p>
     </div>
   );

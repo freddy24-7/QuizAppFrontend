@@ -26,6 +26,8 @@ interface Participant {
 interface QuizData {
   title: string;
   durationInSeconds: number;
+  startTime: string;
+  closed: boolean;
   questions: Question[];
   participants: Participant[];
 }
@@ -34,6 +36,8 @@ const QuizForm = () => {
   const [quizData, setQuizData] = useState<QuizData>({
     title: '',
     durationInSeconds: 120,
+    startTime: new Date().toISOString(),
+    closed: false,
     questions: [
       {
         text: '',
@@ -50,6 +54,7 @@ const QuizForm = () => {
   const [success, setSuccess] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | 'invite' | null>(null);
   const [createdQuizId, setCreatedQuizId] = useState<string>('');
+  const [inviteParticipants, setInviteParticipants] = useState<{ phoneNumber: string }[]>([]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuizData({ ...quizData, title: e.target.value });
@@ -190,12 +195,55 @@ const QuizForm = () => {
       // Validate phone number format
       validatePhoneNumbers();
 
-      const response = await axios.post('http://localhost:8080/api/quizzes', quizData);
+      // Store participants for invites before clearing form
+      setInviteParticipants(quizData.participants.filter(p => p.phoneNumber.trim() !== ''));
+
+      // Format the data to match backend expectations
+      const submissionData = {
+        ...quizData,
+        participants: quizData.participants.map(p => ({
+          phoneNumber: p.phoneNumber
+        }))
+      };
+
+      const response = await axios.post('http://localhost:8080/api/quizzes', submissionData);
+      console.log('Quiz creation response:', response.data);
+      
+      if (!response.data) {
+        throw new Error('Failed to create quiz: Empty response received');
+      }
+
+      // The response should now have a clean structure with an id field
       const quizId = response.data.id;
-      setCreatedQuizId(quizId);
+      
+      if (!quizId) {
+        console.error('Response data:', response.data);
+        throw new Error('Failed to create quiz: No quiz ID found in response');
+      }
+
+      setCreatedQuizId(quizId.toString());
       setSuccess('Quiz created successfully!');
       setCurrentStep('invite');
+
+      // Clear the form data after successful submission
+      setQuizData({
+        title: '',
+        durationInSeconds: 120,
+        startTime: new Date().toISOString(),
+        closed: false,
+        questions: [
+          {
+            text: '',
+            options: [
+              { text: '', correct: false },
+              { text: '', correct: false },
+            ],
+          },
+        ],
+        participants: [{ phoneNumber: '' }],
+      });
     } catch (err) {
+      console.error('Quiz creation error:', err);
       setError(
         err instanceof Error
           ? err.message
@@ -206,10 +254,13 @@ const QuizForm = () => {
 
   const handleInvitesSent = () => {
     setCurrentStep(null);
+    setInviteParticipants([]);
     // Clear form
     setQuizData({
       title: '',
       durationInSeconds: 120,
+      startTime: new Date().toISOString(),
+      closed: false,
       questions: [
         {
           text: '',
@@ -514,7 +565,7 @@ const QuizForm = () => {
         
         <InviteParticipants
           quizId={createdQuizId}
-          participants={quizData.participants}
+          participants={inviteParticipants}
           onInvitesSent={handleInvitesSent}
         />
       </div>
