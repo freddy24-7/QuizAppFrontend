@@ -23,7 +23,7 @@ export const generateWhatsAppLink = (phoneNumber: string, message: string): stri
 
 export const generateQuizInviteMessage = (quizId: string): string => {
   const baseUrl = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5173' 
+    ? 'localhost:5173' 
     : window.location.origin;
     
   const quizUrl = `${baseUrl}/quiz/respond?quizId=${quizId}`;

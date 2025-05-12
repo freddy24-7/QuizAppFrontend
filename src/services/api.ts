@@ -17,8 +17,8 @@ export interface QuizResponse {
 
 const api = {
   getQuestions: async (quizId: string): Promise<Question[]> => {
-    const response = await axios.get(`${BASE_URL}/api/quizzes/${quizId}/questions`);
-    return response.data;
+    const response = await axios.get(`${BASE_URL}/api/quizzes/${quizId}`);
+    return response.data.questions;
   },
 
   submitAnswer: async (answer: QuizResponse): Promise<void> => {
