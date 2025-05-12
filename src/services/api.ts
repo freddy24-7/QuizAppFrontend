@@ -8,11 +8,21 @@ export interface Question {
   options: { text: string }[];
 }
 
-export interface QuizResponse {
+export interface QuizAnswerResponse {
   phoneNumber: string;
   username: string;
   questionId: number;
   selectedAnswer: string;
+}
+
+export interface CompleteQuizResponse {
+  quizId: number;
+  username: string;
+  phoneNumber: string;
+  answers: {
+    questionId: number;
+    selectedAnswer: string;
+  }[];
 }
 
 const api = {
@@ -21,8 +31,8 @@ const api = {
     return response.data.questions;
   },
 
-  submitAnswer: async (answer: QuizResponse): Promise<void> => {
-    await axios.post(`${BASE_URL}/api/responses`, answer);
+  submitAnswer: async (response: QuizAnswerResponse): Promise<void> => {
+    await axios.post(`${BASE_URL}/api/responses`, response);
   }
 };
 

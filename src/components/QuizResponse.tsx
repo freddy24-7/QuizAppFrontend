@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import api, { Question } from '../services/api';
+import type { QuizAnswerResponse } from '../services/api';
+import { formatPhoneNumber } from '../utils/whatsappUtils';
 
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
@@ -14,7 +16,6 @@ const QuizResponse = () => {
   const [currentStep, setCurrentStep] = useState<'username' | 'questions'>('username');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<{ questionId: number; selectedAnswer: string }[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +38,12 @@ const QuizResponse = () => {
     fetchQuestions();
   }, [quizId]);
 
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow digits and limit to 10 characters
+    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setPhoneNumber(cleaned);
+  };
+
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
@@ -47,25 +54,30 @@ const QuizResponse = () => {
       setError('Please enter your phone number');
       return;
     }
-    setError('');
-    setCurrentStep('questions');
+
+    try {
+      // Validate phone number format
+      formatPhoneNumber(phoneNumber);
+      setError('');
+      setCurrentStep('questions');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid phone number format');
+    }
   };
 
   const handleAnswerSubmit = async (selectedAnswer: string) => {
     try {
       const currentQuestion = questions[currentQuestionIndex];
-      const response = {
+      
+      // Submit the current answer
+      const answer: QuizAnswerResponse = {
         phoneNumber,
         username,
         questionId: currentQuestion.id,
         selectedAnswer
       };
-
-      // Send answer to backend
-      await api.submitAnswer(response);
       
-      // Store answer locally
-      setAnswers([...answers, { questionId: currentQuestion.id, selectedAnswer }]);
+      await api.submitAnswer(answer);
 
       // Move to next question or finish
       if (currentQuestionIndex < questions.length - 1) {
@@ -74,6 +86,7 @@ const QuizResponse = () => {
         setSuccess('Thank you for completing the quiz!');
       }
     } catch (err) {
+      console.error('Error submitting answer:', err);
       setError('Failed to submit answer. Please try again.');
     }
   };
@@ -122,10 +135,12 @@ const QuizResponse = () => {
             <Input
               id="phoneNumber"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Enter your phone number"
+              onChange={handlePhoneNumberChange}
+              placeholder="Enter your phone number (e.g., 0612345678)"
+              pattern="06\d{8}"
               required
             />
+            <p className="text-sm text-gray-500">Must be 10 digits starting with 06</p>
           </div>
           <Button type="submit" className="w-full">
             Start Quiz
