@@ -27,10 +27,13 @@ const QuizResponse = () => {
         if (!quizId) {
           throw new Error('Quiz ID is required');
         }
+        console.log('Starting to fetch questions for quiz:', quizId);
         const questions = await api.getQuestions(quizId);
+        console.log('Successfully fetched questions:', questions);
         setQuestions(questions);
         setIsLoading(false);
       } catch (err) {
+        console.error('Error fetching questions:', err);
         setError('Failed to load quiz questions');
         setIsLoading(false);
       }
@@ -58,9 +61,11 @@ const QuizResponse = () => {
     try {
       // Validate phone number format
       formatPhoneNumber(phoneNumber);
+      console.log('Phone number validated successfully:', phoneNumber);
       setError('');
       setCurrentStep('questions');
     } catch (err) {
+      console.error('Phone number validation failed:', err);
       setError(err instanceof Error ? err.message : 'Invalid phone number format');
     }
   };
@@ -68,6 +73,12 @@ const QuizResponse = () => {
   const handleAnswerSubmit = async (selectedAnswer: string) => {
     try {
       const currentQuestion = questions[currentQuestionIndex];
+      console.log('Preparing to submit answer for question:', {
+        questionNumber: currentQuestionIndex + 1,
+        questionId: currentQuestion.id,
+        questionText: currentQuestion.text,
+        selectedAnswer
+      });
       
       // Submit the current answer
       const answer: QuizAnswerResponse = {
@@ -77,12 +88,16 @@ const QuizResponse = () => {
         selectedAnswer
       };
       
+      console.log('Submitting answer to backend:', answer);
       await api.submitAnswer(answer);
+      console.log('Answer submitted successfully');
 
       // Move to next question or finish
       if (currentQuestionIndex < questions.length - 1) {
+        console.log('Moving to next question');
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
+        console.log('Quiz completed successfully');
         setSuccess('Thank you for completing the quiz!');
       }
     } catch (err) {
