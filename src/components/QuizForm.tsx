@@ -8,6 +8,7 @@ import { Checkbox } from './ui/checkbox';
 import { Modal } from './ui/modal';
 import InviteParticipants from './InviteParticipants';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface Option {
   text: string;
@@ -55,6 +56,7 @@ const QuizForm = () => {
   const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | 'invite' | null>(null);
   const [createdQuizId, setCreatedQuizId] = useState<string>('');
   const [inviteParticipants, setInviteParticipants] = useState<{ phoneNumber: string }[]>([]);
+  const navigate = useNavigate();
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuizData({ ...quizData, title: e.target.value });
@@ -255,23 +257,8 @@ const QuizForm = () => {
   const handleInvitesSent = () => {
     setCurrentStep(null);
     setInviteParticipants([]);
-    // Clear form
-    setQuizData({
-      title: '',
-      durationInSeconds: 120,
-      startTime: new Date().toISOString(),
-      closed: false,
-      questions: [
-        {
-          text: '',
-          options: [
-            { text: '', correct: false },
-            { text: '', correct: false },
-          ],
-        },
-      ],
-      participants: [{ phoneNumber: '' }],
-    });
+    // Navigate to results page
+    navigate(`/quiz/results/${createdQuizId}`);
   };
 
   const renderBasicInfoModal = () => (

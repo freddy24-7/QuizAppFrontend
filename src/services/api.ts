@@ -15,14 +15,18 @@ export interface QuizAnswerResponse {
   selectedAnswer: string;
 }
 
-export interface CompleteQuizResponse {
-  quizId: number;
+export interface QuizResult {
   username: string;
-  phoneNumber: string;
-  answers: {
-    questionId: number;
-    selectedAnswer: string;
-  }[];
+  score: number;
+  lastSubmittedAt: string;
+}
+
+export interface ResultsResponse {
+  page: number;
+  size: number;
+  totalPages: number;
+  totalResults: number;
+  results: QuizResult[];
 }
 
 const api = {
@@ -43,6 +47,15 @@ const api = {
     
     await axios.post(`${BASE_URL}/api/responses`, response);
     console.log('Answer submitted successfully');
+  },
+
+  getResults: async (quizId: string, page: number = 0, size: number = 10): Promise<ResultsResponse> => {
+    console.log(`Fetching results for quiz ${quizId}, page ${page}, size ${size}`);
+    const response = await axios.get(`${BASE_URL}/api/responses/results/${quizId}`, {
+      params: { page, size }
+    });
+    console.log('Received results:', response.data);
+    return response.data;
   }
 };
 

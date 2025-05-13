@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import Home from './components/Home';
 import Quiz from './components/Quiz';
 import QuizResponse from './components/QuizResponse';
+import QuizResults from './components/QuizResults';
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/quiz/respond" element={<QuizResponse />} />
+            <Route path="/quiz/results/:quizId" element={<QuizResults />} />
           </Routes>
         </main>
         <Footer />
