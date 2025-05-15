@@ -16,7 +16,10 @@ const QuizResults = () => {
     try {
       if (!quizId) throw new Error('Quiz ID is required');
       const response = await api.getResults(quizId, currentPage);
-      setResults(response.results);
+      
+      // Now we can properly filter by quizId since we have it in the response
+      const filteredResults = response.results.filter(result => result.quizId === Number(quizId));
+      setResults(filteredResults);
       setTotalPages(response.totalPages);
       setError(null);
     } catch (err) {
@@ -80,7 +83,7 @@ const QuizResults = () => {
           {results.map((result) => {
             const heightPercentage = (result.score / maxScore) * 100;
             return (
-              <div key={result.username} className="flex flex-col items-center gap-2">
+              <div key={`${result.participantId}-${result.quizId}`} className="flex flex-col items-center gap-2">
                 <div 
                   className="w-20 bg-sky-500 rounded-t-lg transition-all duration-500 ease-in-out hover:bg-sky-600"
                   style={{ 
@@ -89,6 +92,9 @@ const QuizResults = () => {
                   }}
                 />
                 <div className="text-sm font-medium text-gray-700">{result.username}</div>
+                <div className="text-xs text-gray-500">
+                  Questions answered: {result.questionIds.length}
+                </div>
                 <div className="text-sm text-gray-500">Score: {result.score}</div>
               </div>
             );
@@ -104,17 +110,21 @@ const QuizResults = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Rank</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Username</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Questions</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Score</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Last Submission</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {results.map((result, index) => (
-                <tr key={result.username} className="hover:bg-sky-50">
+                <tr key={`${result.participantId}-${result.quizId}`} className="hover:bg-sky-50">
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {currentPage * 10 + index + 1}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{result.username}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {result.questionIds.length} answered
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{result.score}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{result.lastSubmittedAt}</td>
                 </tr>

@@ -31,15 +31,12 @@ export interface QuizResponseData {
 }
 
 export interface QuizResult {
+  participantId: number;
   score: number;
+  quizId: number;
   lastSubmittedAt: string;
+  questionIds: number[];
   username: string;
-  // These fields exist in DB but are not currently exposed by Spring
-  // TODO: Uncomment once Spring exposes these fields
-  // id?: string;
-  // participantId?: string;
-  // quizId?: string;
-  // questionId?: number;
 }
 
 export interface ResultsResponse {
