@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -172,6 +172,8 @@ const QuizForm = () => {
     setSuccess('');
 
     try {
+      console.log('Starting quiz submission with BASE_URL:', BASE_URL);
+      
       // Validate form
       if (!quizData.title.trim()) {
         throw new Error('Please enter a quiz title');
@@ -209,42 +211,61 @@ const QuizForm = () => {
         }))
       };
 
-      const response = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
-      console.log('Quiz creation response:', response.data);
-      
-      if (!response.data) {
-        throw new Error('Failed to create quiz: Empty response received');
-      }
-
-      // The response should now have a clean structure with an id field
-      const quizId = response.data.id;
-      
-      if (!quizId) {
-        console.error('Response data:', response.data);
-        throw new Error('Failed to create quiz: No quiz ID found in response');
-      }
-
-      setCreatedQuizId(quizId.toString());
-      setSuccess('Quiz created successfully!');
-      setCurrentStep('invite');
-
-      // Clear the form data after successful submission
-      setQuizData({
-        title: '',
-        durationInSeconds: 120,
-        startTime: new Date().toISOString(),
-        closed: false,
-        questions: [
-          {
-            text: '',
-            options: [
-              { text: '', correct: false },
-              { text: '', correct: false },
-            ],
-          },
-        ],
-        participants: [{ phoneNumber: '' }],
+      console.log('Attempting to create quiz with data:', {
+        url: `${BASE_URL}/api/quizzes`,
+        data: submissionData
       });
+
+      try {
+        const response = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
+        console.log('Quiz creation response:', response.data);
+        
+        if (!response.data) {
+          console.error('Empty response received from server');
+          throw new Error('Failed to create quiz: Empty response received');
+        }
+
+        // The response should now have a clean structure with an id field
+        const quizId = response.data.id;
+        
+        if (!quizId) {
+          console.error('Response data missing quiz ID:', response.data);
+          throw new Error('Failed to create quiz: No quiz ID found in response');
+        }
+
+        console.log('Quiz created successfully with ID:', quizId);
+        setCreatedQuizId(quizId.toString());
+        setSuccess('Quiz created successfully!');
+        setCurrentStep('invite');
+
+        // Clear the form data after successful submission
+        setQuizData({
+          title: '',
+          durationInSeconds: 120,
+          startTime: new Date().toISOString(),
+          closed: false,
+          questions: [
+            {
+              text: '',
+              options: [
+                { text: '', correct: false },
+                { text: '', correct: false },
+              ],
+            },
+          ],
+          participants: [{ phoneNumber: '' }],
+        });
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          console.error('Axios error details:', {
+            error,
+            response: error.response?.data,
+            status: error.response?.status,
+            headers: error.response?.headers
+          });
+        }
+        throw error;
+      }
     } catch (err) {
       console.error('Quiz creation error:', err);
       setError(
