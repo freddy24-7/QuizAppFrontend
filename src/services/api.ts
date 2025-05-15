@@ -31,18 +31,22 @@ export interface QuizResponseData {
 }
 
 export interface QuizResult {
-  participantId: string;  // Using participantId as unique identifier
-  quizId: string;        // Quiz identifier
-  username: string;
   score: number;
   lastSubmittedAt: string;
+  username: string;
+  // These fields exist in DB but are not currently exposed by Spring
+  // TODO: Uncomment once Spring exposes these fields
+  // id?: string;
+  // participantId?: string;
+  // quizId?: string;
+  // questionId?: number;
 }
 
 export interface ResultsResponse {
-  page: number;
+  totalResults: number;
   size: number;
   totalPages: number;
-  totalResults: number;
+  page: number;
   results: QuizResult[];
 }
 
@@ -97,7 +101,15 @@ const api = {
     
     try {
       const response = await axios.get(url, { params: { page, size } });
-      console.log('getResults - Response:', response.data);
+      console.log('getResults - Raw Response:', response);
+      console.log('getResults - Response Data:', response.data);
+      console.log('getResults - Results Array:', response.data.results);
+      
+      // Log each result's structure
+      if (response.data.results && response.data.results.length > 0) {
+        console.log('First result structure:', JSON.stringify(response.data.results[0], null, 2));
+      }
+      
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
