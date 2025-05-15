@@ -3,8 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import api, { Question } from '../services/api';
-import type { QuizAnswerResponse } from '../services/api';
+import api, { Question, QuizAnswerResponse } from '../services/api';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
 import { BASE_URL } from '../services/api';
 
@@ -89,32 +88,31 @@ const QuizResponse = () => {
 
   const handleAnswerSubmit = async (selectedAnswer: string) => {
     try {
+      if (!quizId) {
+        console.error('No quizId available for submission');
+        setError('Quiz ID is missing. Please check the URL.');
+        return;
+      }
+
       const currentQuestion = questions[currentQuestionIndex];
-      console.log('Preparing to submit answer for question:', {
-        questionNumber: currentQuestionIndex + 1,
-        questionId: currentQuestion.id,
-        questionText: currentQuestion.text,
-        selectedAnswer
-      });
       
-      // Submit the current answer
-      const answer: QuizAnswerResponse = {
+      // Log the full submission data
+      const submissionData: QuizAnswerResponse = {
         phoneNumber,
         username,
         questionId: currentQuestion.id,
-        selectedAnswer
+        selectedAnswer,
+        quizId: quizId // Explicitly include the quizId
       };
+
+      console.log('Full submission data:', submissionData);
       
-      console.log('Submitting answer to backend:', answer);
-      await api.submitAnswer(answer);
+      await api.submitAnswer(submissionData);
       console.log('Answer submitted successfully');
 
-      // Move to next question or finish
       if (currentQuestionIndex < questions.length - 1) {
-        console.log('Moving to next question');
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        console.log('Quiz completed successfully');
         setSuccess('Thank you for completing the quiz!');
       }
     } catch (err) {

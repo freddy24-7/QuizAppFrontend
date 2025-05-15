@@ -16,6 +16,7 @@ export interface QuizAnswerResponse {
   username: string;
   questionId: number;
   selectedAnswer: string;
+  quizId: string;
 }
 
 export interface QuizResult {
