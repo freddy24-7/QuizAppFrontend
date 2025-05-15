@@ -19,7 +19,20 @@ export interface QuizAnswerResponse {
   quizId: string;
 }
 
+// Updated to match Spring's JSON response structure
+export interface QuizResponseData {
+  id: string;           // responseId
+  createdAt: string;    // timestamp
+  selectedAnswer: string;
+  username: string;
+  participantId: string;
+  questionId: number;
+  quizId: string;
+}
+
 export interface QuizResult {
+  participantId: string;  // Using participantId as unique identifier
+  quizId: string;        // Quiz identifier
   username: string;
   score: number;
   lastSubmittedAt: string;
