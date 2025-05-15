@@ -1,3 +1,5 @@
+import { getFrontendUrl } from '../config/urls';
+
 export const formatPhoneNumber = (phoneNumber: string): string => {
   // Remove any non-digit characters
   const cleaned = phoneNumber.replace(/\D/g, '');
@@ -22,10 +24,7 @@ export const generateWhatsAppLink = (phoneNumber: string, message: string): stri
 };
 
 export const generateQuizInviteMessage = (quizId: string): string => {
-  const baseUrl = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5173' 
-    : window.location.origin;
-    
+  const baseUrl = getFrontendUrl();
   const quizUrl = `${baseUrl}/quiz/respond?quizId=${quizId}`;
   return `You've been invited to take a quiz! Click the link below to participate:\n\n${quizUrl}`;
 }; 

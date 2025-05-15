@@ -9,6 +9,7 @@ import { Modal } from './ui/modal';
 import InviteParticipants from './InviteParticipants';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
 import { useNavigate } from 'react-router-dom';
+import { BASE_URL } from '../services/api';
 
 interface Option {
   text: string;
@@ -208,7 +209,7 @@ const QuizForm = () => {
         }))
       };
 
-      const response = await axios.post('http://localhost:8080/api/quizzes', submissionData);
+      const response = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
       console.log('Quiz creation response:', response.data);
       
       if (!response.data) {

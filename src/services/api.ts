@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getBackendUrl } from '../config/urls';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+export const BASE_URL = getBackendUrl();
 
 export interface Question {
   id: number;
