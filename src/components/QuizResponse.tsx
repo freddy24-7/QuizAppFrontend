@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import api, { Question } from '../services/api';
 import type { QuizAnswerResponse } from '../services/api';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
+import { BASE_URL } from '../services/api';
 
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
@@ -20,21 +21,37 @@ const QuizResponse = () => {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Log initial mount and quizId
+  useEffect(() => {
+    console.log('QuizResponse component mounted');
+    console.log('Current quizId from URL:', quizId);
+    console.log('Current BASE_URL:', BASE_URL);
+  }, [quizId]);
+
   // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         if (!quizId) {
+          console.error('No quizId found in URL parameters');
           throw new Error('Quiz ID is required');
         }
         console.log('Starting to fetch questions for quiz:', quizId);
+        console.log('Making request to:', `${BASE_URL}/api/quizzes/${quizId}`);
+        
         const questions = await api.getQuestions(quizId);
         console.log('Successfully fetched questions:', questions);
         setQuestions(questions);
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching questions:', err);
-        setError('Failed to load quiz questions');
+        if (err instanceof Error) {
+          console.error('Error details:', {
+            message: err.message,
+            stack: err.stack
+          });
+        }
+        setError('Failed to load quiz questions. Please check the quiz ID and try again.');
         setIsLoading(false);
       }
     };

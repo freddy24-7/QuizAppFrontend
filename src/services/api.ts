@@ -1,7 +1,9 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { getBackendUrl } from '../config/urls';
 
 export const BASE_URL = getBackendUrl();
+
+console.log('API Service initialized with BASE_URL:', BASE_URL);
 
 export interface Question {
   id: number;
@@ -32,31 +34,67 @@ export interface ResultsResponse {
 
 const api = {
   getQuestions: async (quizId: string): Promise<Question[]> => {
-    console.log('Fetching questions for quiz ID:', quizId);
-    console.log('GET request to:', `${BASE_URL}/api/quizzes/${quizId}`);
+    const url = `${BASE_URL}/api/quizzes/${quizId}`;
+    console.log('getQuestions - Full URL:', url);
+    console.log('getQuestions - Headers:', {
+      'Content-Type': 'application/json'
+    });
     
-    const response = await axios.get(`${BASE_URL}/api/quizzes/${quizId}`);
-    console.log('Received questions:', response.data.questions);
-    return response.data.questions;
+    try {
+      const response = await axios.get(url);
+      console.log('getQuestions - Response:', response.data);
+      return response.data.questions;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('getQuestions - Error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+      }
+      throw error;
+    }
   },
 
   submitAnswer: async (response: QuizAnswerResponse): Promise<void> => {
-    console.log('Submitting answer to backend:', {
-      url: `${BASE_URL}/api/responses`,
-      data: response
-    });
+    const url = `${BASE_URL}/api/responses`;
+    console.log('submitAnswer - Full URL:', url);
+    console.log('submitAnswer - Request Data:', response);
     
-    await axios.post(`${BASE_URL}/api/responses`, response);
-    console.log('Answer submitted successfully');
+    try {
+      await axios.post(url, response);
+      console.log('submitAnswer - Success');
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('submitAnswer - Error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+      }
+      throw error;
+    }
   },
 
   getResults: async (quizId: string, page: number = 0, size: number = 10): Promise<ResultsResponse> => {
-    console.log(`Fetching results for quiz ${quizId}, page ${page}, size ${size}`);
-    const response = await axios.get(`${BASE_URL}/api/responses/results/${quizId}`, {
-      params: { page, size }
-    });
-    console.log('Received results:', response.data);
-    return response.data;
+    const url = `${BASE_URL}/api/responses/results/${quizId}`;
+    console.log('getResults - Full URL:', url);
+    console.log('getResults - Query Params:', { page, size });
+    
+    try {
+      const response = await axios.get(url, { params: { page, size } });
+      console.log('getResults - Response:', response.data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('getResults - Error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+      }
+      throw error;
+    }
   }
 };
 
