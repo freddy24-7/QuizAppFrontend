@@ -55,6 +55,8 @@ const QuizForm = () => {
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | 'invite' | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [showAddQuestionPrompt, setShowAddQuestionPrompt] = useState<boolean>(false);
   const [createdQuizId, setCreatedQuizId] = useState<string>('');
   const [inviteParticipants, setInviteParticipants] = useState<{ phoneNumber: string }[]>([]);
   const navigate = useNavigate();
@@ -105,29 +107,6 @@ const QuizForm = () => {
       newQuestions[questionIndex].options = newQuestions[
         questionIndex
       ].options.filter((_, index) => index !== optionIndex);
-      setQuizData({ ...quizData, questions: newQuestions });
-    }
-  };
-
-  const addQuestion = () => {
-    setQuizData({
-      ...quizData,
-      questions: [
-        ...quizData.questions,
-        {
-          text: '',
-          options: [
-            { text: '', correct: false },
-            { text: '', correct: false },
-          ],
-        },
-      ],
-    });
-  };
-
-  const removeQuestion = (index: number) => {
-    if (quizData.questions.length > 1) {
-      const newQuestions = quizData.questions.filter((_, i) => i !== index);
       setQuizData({ ...quizData, questions: newQuestions });
     }
   };
@@ -293,6 +272,49 @@ const QuizForm = () => {
     navigate(`/quiz/results/${createdQuizId}`);
   };
 
+  const handleQuestionComplete = () => {
+    const currentQuestion = quizData.questions[currentQuestionIndex];
+    
+    // Validate current question
+    if (!currentQuestion.text.trim()) {
+      setError('Please fill in the question text');
+      return;
+    }
+    if (currentQuestion.options.some(o => !o.text.trim())) {
+      setError('Please fill in all options');
+      return;
+    }
+    if (!currentQuestion.options.some(o => o.correct)) {
+      setError('Please select at least one correct answer');
+      return;
+    }
+
+    setError('');
+    setShowAddQuestionPrompt(true);
+  };
+
+  const handleAddAnotherQuestion = () => {
+    setShowAddQuestionPrompt(false);
+    // Initialize the new question with default values before adding
+    const newQuestion = {
+      text: '',
+      options: [
+        { text: '', correct: false },
+        { text: '', correct: false },
+      ],
+    };
+    setQuizData(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+    setCurrentQuestionIndex(quizData.questions.length);
+  };
+
+  const handleFinishQuestions = () => {
+    setShowAddQuestionPrompt(false);
+    setCurrentStep('participants');
+  };
+
   const renderBasicInfoModal = () => (
     <Modal
       isOpen={currentStep === 'basic'}
@@ -349,139 +371,112 @@ const QuizForm = () => {
     </Modal>
   );
 
-  const renderQuestionsModal = () => (
-    <Modal
-      isOpen={currentStep === 'questions'}
-      onClose={() => setCurrentStep(null)}
-      title="Add Questions"
-      subtitle="Create questions and mark the correct answers"
-      currentStep={2}
-      totalSteps={3}
-      className="max-h-[90vh] overflow-y-auto"
-    >
-      <div className="space-y-8">
-        <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg mb-6">
-          <p className="text-sky-700 dark:text-sky-300 text-sm">
-            <span className="font-semibold">Tip:</span> For each question, mark the checkbox next to the correct answer(s). You can select multiple correct answers if needed.
-          </p>
-        </div>
+  const renderQuestionModal = () => {
+    // Add safety check for current question
+    if (!quizData.questions[currentQuestionIndex]) {
+      return null;
+    }
 
-        {quizData.questions.map((question, questionIndex) => (
-          <div
-            key={questionIndex}
-            className="p-6 border border-sky-200 rounded-lg space-y-6"
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex-1 space-y-2">
-                <Label className="text-base">Question {questionIndex + 1}</Label>
-                <Textarea
-                  value={question.text}
-                  onChange={(e) =>
-                    handleQuestionChange(questionIndex, e.target.value)
-                  }
-                  placeholder="Enter your question"
-                  required
-                  className="min-h-[100px]"
-                />
-              </div>
-              {quizData.questions.length > 1 && (
-                <Button
-                  type="button"
-                  onClick={() => removeQuestion(questionIndex)}
-                  variant="destructive"
-                  className="ml-4"
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
+    const currentQuestion = quizData.questions[currentQuestionIndex];
 
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>Mark correct answer(s)</span>
-              </div>
-              {question.options.map((option, optionIndex) => (
-                <div
-                  key={optionIndex}
-                  className="flex items-center space-x-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`correct-${questionIndex}-${optionIndex}`}
-                      checked={option.correct}
-                      onCheckedChange={() =>
-                        handleCorrectOptionChange(questionIndex, optionIndex)
-                      }
-                      className="text-sky-600"
-                    />
-                    <Label
-                      htmlFor={`correct-${questionIndex}-${optionIndex}`}
-                      className="text-sm text-gray-600 dark:text-gray-400"
-                    >
-                      Correct
-                    </Label>
-                  </div>
-                  <Input
-                    value={option.text}
-                    onChange={(e) =>
-                      handleOptionChange(
-                        questionIndex,
-                        optionIndex,
-                        e.target.value,
-                      )
-                    }
-                    placeholder={`Option ${optionIndex + 1}`}
-                    required
-                    className="h-12"
-                  />
-                  {question.options.length > 2 && (
-                    <Button
-                      type="button"
-                      onClick={() => removeOption(questionIndex, optionIndex)}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                onClick={() => addOption(questionIndex)}
-                variant="outline"
-                size="sm"
-                className="mt-4"
-              >
-                Add Option
-              </Button>
-            </div>
+    return (
+      <Modal
+        isOpen={currentStep === 'questions' && !showAddQuestionPrompt}
+        onClose={() => setCurrentStep(null)}
+        title={`Question ${currentQuestionIndex + 1}`}
+        subtitle="Add question text and options"
+        currentStep={2}
+        totalSteps={3}
+      >
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <Label className="text-base">Question Text</Label>
+            <Textarea
+              value={currentQuestion.text}
+              onChange={(e) => handleQuestionChange(currentQuestionIndex, e.target.value)}
+              placeholder="Enter your question"
+              required
+              className="min-h-[100px]"
+            />
           </div>
-        ))}
 
-        <div className="flex justify-between pt-4">
-          <Button
-            type="button"
-            onClick={addQuestion}
-            variant="outline"
-            className="px-6"
-          >
-            Add Question
-          </Button>
-          <div className="space-x-4">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Mark correct answer(s)</span>
+            </div>
+
+            {currentQuestion.options.map((option, optionIndex) => (
+              <div
+                key={optionIndex}
+                className="flex items-center space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`correct-${currentQuestionIndex}-${optionIndex}`}
+                    checked={option.correct}
+                    onCheckedChange={() =>
+                      handleCorrectOptionChange(currentQuestionIndex, optionIndex)
+                    }
+                    className="text-sky-600"
+                  />
+                  <Label
+                    htmlFor={`correct-${currentQuestionIndex}-${optionIndex}`}
+                    className="text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Correct
+                  </Label>
+                </div>
+                <Input
+                  value={option.text}
+                  onChange={(e) =>
+                    handleOptionChange(
+                      currentQuestionIndex,
+                      optionIndex,
+                      e.target.value,
+                    )
+                  }
+                  placeholder={`Option ${optionIndex + 1}`}
+                  required
+                  className="h-12"
+                />
+                {currentQuestion.options.length > 2 && (
+                  <Button
+                    type="button"
+                    onClick={() => removeOption(currentQuestionIndex, optionIndex)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              onClick={() => addOption(currentQuestionIndex)}
+              variant="outline"
+              size="sm"
+              className="mt-2"
+            >
+              Add Option
+            </Button>
+          </div>
+
+          <div className="flex justify-between pt-4">
             <Button
               type="button"
               variant="outline"
@@ -492,12 +487,39 @@ const QuizForm = () => {
             </Button>
             <Button
               type="button"
-              onClick={() => setCurrentStep('participants')}
+              onClick={handleQuestionComplete}
               className="px-6"
             >
-              Next: Add Participants
+              Continue
             </Button>
           </div>
+        </div>
+      </Modal>
+    );
+  };
+
+  const renderAddQuestionPrompt = () => (
+    <Modal
+      isOpen={showAddQuestionPrompt}
+      onClose={() => setShowAddQuestionPrompt(false)}
+      title="Add Another Question?"
+      subtitle="Choose whether to add another question or proceed to add participants"
+    >
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4">
+          <Button
+            onClick={handleAddAnotherQuestion}
+            className="w-full py-8 text-lg"
+          >
+            Add Another Question
+          </Button>
+          <Button
+            onClick={handleFinishQuestions}
+            variant="outline"
+            className="w-full py-8 text-lg"
+          >
+            Finish and Add Participants
+          </Button>
         </div>
       </div>
     </Modal>
@@ -636,7 +658,8 @@ const QuizForm = () => {
       )}
 
       {renderBasicInfoModal()}
-      {renderQuestionsModal()}
+      {renderQuestionModal()}
+      {renderAddQuestionPrompt()}
       {renderParticipantsModal()}
       {renderInviteModal()}
     </div>
