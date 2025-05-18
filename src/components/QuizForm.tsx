@@ -288,6 +288,9 @@ const QuizForm = () => {
       isOpen={currentStep === 'basic'}
       onClose={() => setCurrentStep(null)}
       title="Basic Quiz Information"
+      subtitle="Set the title and duration for your quiz"
+      currentStep={1}
+      totalSteps={3}
     >
       <div className="space-y-6">
         <div className="space-y-2">
@@ -341,6 +344,9 @@ const QuizForm = () => {
       isOpen={currentStep === 'questions'}
       onClose={() => setCurrentStep(null)}
       title="Add Questions"
+      subtitle="Create questions and mark the correct answers"
+      currentStep={2}
+      totalSteps={3}
       className="max-h-[90vh] overflow-y-auto"
     >
       <div className="space-y-8">
@@ -492,6 +498,9 @@ const QuizForm = () => {
       isOpen={currentStep === 'participants'}
       onClose={() => setCurrentStep(null)}
       title="Add Participants"
+      subtitle="Enter phone numbers for quiz participants"
+      currentStep={3}
+      totalSteps={3}
     >
       <div className="space-y-6">
         <div className="bg-sky-50 p-4 rounded-lg mb-4">
@@ -566,6 +575,7 @@ const QuizForm = () => {
       isOpen={currentStep === 'invite'}
       onClose={() => setCurrentStep(null)}
       title="Send Invites"
+      subtitle="Send quiz invitations to participants"
     >
       <div className="space-y-6">
         <div className="bg-green-50 p-4 rounded-lg">
@@ -581,40 +591,26 @@ const QuizForm = () => {
     </Modal>
   );
 
+  const startQuizCreation = () => {
+    setCurrentStep('basic');
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Create a New Quiz</h1>
-        <p className="text-gray-600 dark:text-gray-400 text-lg">
-          Follow the steps below to create your quiz
+        <p className="text-gray-600 dark:text-gray-400 text-lg mb-8">
+          Click the button below to start creating your quiz
         </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6 mb-12">
-        <Button
-          onClick={() => setCurrentStep('basic')}
-          variant={currentStep === 'basic' ? 'default' : 'outline'}
-          className="h-32 flex flex-col items-center justify-center space-y-2"
-        >
-          <span className="text-2xl">1</span>
-          <span className="text-lg">Basic Info</span>
-        </Button>
-        <Button
-          onClick={() => setCurrentStep('questions')}
-          variant={currentStep === 'questions' ? 'default' : 'outline'}
-          className="h-32 flex flex-col items-center justify-center space-y-2"
-        >
-          <span className="text-2xl">2</span>
-          <span className="text-lg">Questions</span>
-        </Button>
-        <Button
-          onClick={() => setCurrentStep('participants')}
-          variant={currentStep === 'participants' ? 'default' : 'outline'}
-          className="h-32 flex flex-col items-center justify-center space-y-2"
-        >
-          <span className="text-2xl">3</span>
-          <span className="text-lg">Participants</span>
-        </Button>
+        {!currentStep && (
+          <Button
+            onClick={startQuizCreation}
+            size="lg"
+            className="text-lg px-8 py-6 h-auto"
+          >
+            Create New Quiz
+          </Button>
+        )}
       </div>
 
       {error && (
