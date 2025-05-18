@@ -176,29 +176,39 @@ const QuizForm = () => {
       
       // Validate form
       if (!quizData.title.trim()) {
+        setCurrentStep('basic');
         throw new Error('Please enter a quiz title');
       }
 
       if (quizData.questions.some((q) => !q.text.trim())) {
+        setCurrentStep('questions');
         throw new Error('Please fill in all questions');
       }
 
       if (
         quizData.questions.some((q) => q.options.some((o) => !o.text.trim()))
       ) {
+        setCurrentStep('questions');
         throw new Error('Please fill in all options');
       }
 
       if (quizData.questions.some((q) => !q.options.some((o) => o.correct))) {
+        setCurrentStep('questions');
         throw new Error('Each question must have at least one correct answer');
       }
 
       if (quizData.participants.some((p) => !p.phoneNumber.trim())) {
+        setCurrentStep('participants');
         throw new Error('Please fill in all phone numbers');
       }
 
       // Validate phone number format
-      validatePhoneNumbers();
+      try {
+        validatePhoneNumbers();
+      } catch (err) {
+        setCurrentStep('participants');
+        throw err;
+      }
 
       // Store participants for invites before clearing form
       setInviteParticipants(quizData.participants.filter(p => p.phoneNumber.trim() !== ''));

@@ -11,16 +11,44 @@ const QuizResults = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+
+  // Generate array of blue shades with subtle variations
+  const generateBlueShades = (score: number) => {
+    // Base colors for different ranges
+    const baseColors = [
+      { hue: 200, saturation: 90, lightness: 50 }, // Sky blue base
+      { hue: 210, saturation: 90, lightness: 50 }, // Blue base
+      { hue: 220, saturation: 90, lightness: 50 }, // Indigo base
+    ];
+
+    return Array.from({ length: score }).map((_, index) => {
+      const baseColor = baseColors[Math.floor(index / 4)];
+      const variation = index % 4;
+      
+      // Create subtle variations within each base color
+      const hue = baseColor.hue;
+      const saturation = baseColor.saturation - (variation * 5);
+      const lightness = baseColor.lightness - (variation * 3);
+
+      return `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
+    });
+  };
 
   const fetchResults = async () => {
     try {
       if (!quizId) throw new Error('Quiz ID is required');
       const response = await api.getResults(quizId, currentPage);
       
-      // Now we can properly filter by quizId since we have it in the response
       const filteredResults = response.results.filter(result => result.quizId === Number(quizId));
       setResults(filteredResults);
       setTotalPages(response.totalPages);
+      
+      const completedResult = filteredResults.find(r => r.score === Math.max(...filteredResults.map(r => r.score)));
+      if (completedResult) {
+        setTotalQuestions(completedResult.questionIds.length);
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching results:', err);
@@ -32,13 +60,49 @@ const QuizResults = () => {
 
   useEffect(() => {
     fetchResults();
-    // Set up polling every 5 seconds
     const interval = setInterval(fetchResults, 5000);
     return () => clearInterval(interval);
   }, [quizId, currentPage]);
 
-  // Find the maximum score to calculate relative heights
-  const maxScore = Math.max(...results.map(r => r.score), 1);
+  const renderScoreBar = (result: QuizResult) => {
+    const segmentHeight = totalQuestions > 0 ? (1 / totalQuestions) * 100 : 0;
+    const blueShades = generateBlueShades(result.score);
+    
+    return (
+      <div className="relative w-20 bg-gray-100 rounded-lg overflow-hidden" style={{ height: '200px' }}>
+        {/* Grid lines for all questions */}
+        {Array.from({ length: totalQuestions }).map((_, index) => (
+          <div
+            key={`empty-${index}`}
+            className="absolute w-full border-t border-gray-200"
+            style={{
+              bottom: `${(index / totalQuestions) * 100}%`,
+              height: `${segmentHeight}%`,
+            }}
+          />
+        ))}
+        
+        {/* Individual segments for each correct answer */}
+        {Array.from({ length: result.score }).map((_, index) => (
+          <div
+            key={`score-${index}`}
+            className="absolute w-full transition-all duration-500 ease-in-out hover:brightness-110"
+            style={{
+              bottom: `${(index / totalQuestions) * 100}%`,
+              height: `${segmentHeight}%`,
+              backgroundColor: blueShades[index],
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          />
+        ))}
+        
+        {/* Score label */}
+        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-sky-700 whitespace-nowrap">
+          {result.score}/{totalQuestions}
+        </div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -80,25 +144,15 @@ const QuizResults = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-sky-900 mb-4">Score Distribution</h2>
         <div className="flex items-end justify-around h-64 gap-4">
-          {results.map((result) => {
-            const heightPercentage = (result.score / maxScore) * 100;
-            return (
-              <div key={`${result.participantId}-${result.quizId}`} className="flex flex-col items-center gap-2">
-                <div 
-                  className="w-20 bg-sky-500 rounded-t-lg transition-all duration-500 ease-in-out hover:bg-sky-600"
-                  style={{ 
-                    height: `${heightPercentage}%`,
-                    minHeight: '20px' // Ensure bar is always visible
-                  }}
-                />
-                <div className="text-sm font-medium text-gray-700">{result.username}</div>
-                <div className="text-xs text-gray-500">
-                  Questions answered: {result.questionIds.length}
-                </div>
-                <div className="text-sm text-gray-500">Score: {result.score}</div>
+          {results.map((result) => (
+            <div key={`${result.participantId}-${result.quizId}`} className="flex flex-col items-center gap-2">
+              {renderScoreBar(result)}
+              <div className="text-sm font-medium text-gray-700 mt-2">{result.username}</div>
+              <div className="text-xs text-gray-500">
+                Questions answered: {result.questionIds.length}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
       
@@ -123,9 +177,9 @@ const QuizResults = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{result.username}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {result.questionIds.length} answered
+                    {result.questionIds.length} / {totalQuestions}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{result.score}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{result.score} / {totalQuestions}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{result.lastSubmittedAt}</td>
                 </tr>
               ))}
