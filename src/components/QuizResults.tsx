@@ -35,6 +35,17 @@ const QuizResults = () => {
     });
   };
 
+  const fetchQuizDetails = async () => {
+    try {
+      if (!quizId) throw new Error('Quiz ID is required');
+      const questions = await api.getQuestions(quizId);
+      setTotalQuestions(questions.length);
+    } catch (err) {
+      console.error('Error fetching quiz details:', err);
+      setError('Failed to load quiz details');
+    }
+  };
+
   const fetchResults = async () => {
     try {
       if (!quizId) throw new Error('Quiz ID is required');
@@ -43,12 +54,6 @@ const QuizResults = () => {
       const filteredResults = response.results.filter(result => result.quizId === Number(quizId));
       setResults(filteredResults);
       setTotalPages(response.totalPages);
-      
-      const completedResult = filteredResults.find(r => r.score === Math.max(...filteredResults.map(r => r.score)));
-      if (completedResult) {
-        setTotalQuestions(completedResult.questionIds.length);
-      }
-      
       setError(null);
     } catch (err) {
       console.error('Error fetching results:', err);
@@ -59,6 +64,7 @@ const QuizResults = () => {
   };
 
   useEffect(() => {
+    fetchQuizDetails();
     fetchResults();
     const interval = setInterval(fetchResults, 5000);
     return () => clearInterval(interval);
