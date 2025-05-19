@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { generateWhatsAppLink, generateQuizInviteMessage } from '../utils/whatsappUtils';
+import {
+  generateWhatsAppLink,
+  generateQuizInviteMessage,
+} from '../utils/whatsappUtils';
 
 interface InviteParticipantsProps {
   quizId: string;
@@ -36,7 +39,7 @@ const InviteParticipants: React.FC<InviteParticipantsProps> = ({
       // Generate the invite message first
       const message = generateQuizInviteMessage(quizId);
       console.log('Generated message:', message);
-      
+
       // Process participants one at a time
       for (const participant of participants) {
         console.log('Processing participant:', participant);
@@ -44,17 +47,20 @@ const InviteParticipants: React.FC<InviteParticipantsProps> = ({
           console.error('Participant has no phone number:', participant);
           continue;
         }
-        
-        const whatsappLink = generateWhatsAppLink(participant.phoneNumber, message);
+
+        const whatsappLink = generateWhatsAppLink(
+          participant.phoneNumber,
+          message,
+        );
         console.log('Generated WhatsApp link:', whatsappLink);
-        
+
         // Open WhatsApp link
         window.open(whatsappLink, '_blank');
-        
+
         // Wait for 2 seconds before opening the next link
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
-      
+
       onInvitesSent();
     } catch (error) {
       console.error('Error sending invites:', error);
@@ -63,9 +69,14 @@ const InviteParticipants: React.FC<InviteParticipantsProps> = ({
     }
   };
 
-  const isButtonDisabled = !quizId || !participants || participants.length === 0 || isSending;
+  const isButtonDisabled =
+    !quizId || !participants || participants.length === 0 || isSending;
   console.log('Button disabled state:', isButtonDisabled);
-  console.log('Current state:', { quizId, participantsCount: participants?.length, isSending });
+  console.log('Current state:', {
+    quizId,
+    participantsCount: participants?.length,
+    isSending,
+  });
 
   return (
     <div className="space-y-6">
@@ -75,19 +86,19 @@ const InviteParticipants: React.FC<InviteParticipantsProps> = ({
           disabled={isButtonDisabled}
           className="w-full max-w-md"
         >
-          {isSending 
-            ? 'Sending Invites...' 
+          {isSending
+            ? 'Sending Invites...'
             : `Send ${participants?.length || 0} WhatsApp Invite${participants?.length !== 1 ? 's' : ''}`}
         </Button>
       </div>
 
       <p className="text-sm text-gray-500 text-center">
-        {isSending 
-          ? 'Please wait while we send the invites...' 
+        {isSending
+          ? 'Please wait while we send the invites...'
           : 'This will open WhatsApp with a pre-filled message for each participant'}
       </p>
     </div>
   );
 };
 
-export default InviteParticipants; 
+export default InviteParticipants;

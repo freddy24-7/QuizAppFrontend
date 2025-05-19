@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { QuizResult } from '../services/api';
 import { Button } from './ui/button';
@@ -13,45 +13,49 @@ const QuizResults = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
 
-  // Generate array of blue shades with subtle variations
   const generateBlueShades = (score: number) => {
-    // Base colors for different ranges
     const baseColors = [
-      { hue: 200, saturation: 90, lightness: 50 }, // Sky blue base
-      { hue: 210, saturation: 90, lightness: 50 }, // Blue base
-      { hue: 220, saturation: 90, lightness: 50 }, // Indigo base
+      { hue: 200, saturation: 90, lightness: 50 },
+      { hue: 210, saturation: 90, lightness: 50 },
+      { hue: 220, saturation: 90, lightness: 50 },
     ];
 
     return Array.from({ length: score }).map((_, index) => {
       const baseColor = baseColors[Math.floor(index / 4)];
       const variation = index % 4;
-      
-      // Create subtle variations within each base color
+
       const hue = baseColor.hue;
-      const saturation = baseColor.saturation - (variation * 5);
-      const lightness = baseColor.lightness - (variation * 3);
+      const saturation = baseColor.saturation - variation * 5;
+      const lightness = baseColor.lightness - variation * 3;
 
       return `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
     });
   };
 
-  const fetchQuizDetails = async () => {
+  const fetchQuizDetails = useCallback(async () => {
+    if (!quizId) {
+      setError('Quiz ID is required');
+      return;
+    }
     try {
-      if (!quizId) throw new Error('Quiz ID is required');
       const questions = await api.getQuestions(quizId);
       setTotalQuestions(questions.length);
     } catch (err) {
       console.error('Error fetching quiz details:', err);
       setError('Failed to load quiz details');
     }
-  };
+  }, [quizId]);
 
-  const fetchResults = async () => {
+  const fetchResults = useCallback(async () => {
+    if (!quizId) {
+      setError('Quiz ID is required');
+      return;
+    }
     try {
-      if (!quizId) throw new Error('Quiz ID is required');
       const response = await api.getResults(quizId, currentPage);
-      
-      const filteredResults = response.results.filter(result => result.quizId === Number(quizId));
+      const filteredResults = response.results.filter(
+        (result) => result.quizId === Number(quizId),
+      );
       setResults(filteredResults);
       setTotalPages(response.totalPages);
       setError(null);
@@ -61,22 +65,31 @@ const QuizResults = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [quizId, currentPage]);
 
   useEffect(() => {
-    fetchQuizDetails();
-    fetchResults();
-    const interval = setInterval(fetchResults, 5000);
+    const fetchAll = async () => {
+      await fetchQuizDetails();
+      await fetchResults();
+    };
+
+    void fetchAll();
+    const interval = setInterval(() => {
+      void fetchResults();
+    }, 5000);
+
     return () => clearInterval(interval);
-  }, [quizId, currentPage]);
+  }, [fetchQuizDetails, fetchResults]);
 
   const renderScoreBar = (result: QuizResult) => {
     const segmentHeight = totalQuestions > 0 ? (1 / totalQuestions) * 100 : 0;
     const blueShades = generateBlueShades(result.score);
-    
+
     return (
-      <div className="relative w-20 bg-gray-100 rounded-lg overflow-hidden" style={{ height: '200px' }}>
-        {/* Grid lines for all questions */}
+      <div
+        className="relative w-20 bg-gray-100 rounded-lg overflow-hidden"
+        style={{ height: '200px' }}
+      >
         {Array.from({ length: totalQuestions }).map((_, index) => (
           <div
             key={`empty-${index}`}
@@ -87,8 +100,7 @@ const QuizResults = () => {
             }}
           />
         ))}
-        
-        {/* Individual segments for each correct answer */}
+
         {Array.from({ length: result.score }).map((_, index) => (
           <div
             key={`score-${index}`}
@@ -101,8 +113,7 @@ const QuizResults = () => {
             }}
           />
         ))}
-        
-        {/* Score label */}
+
         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-sky-700 whitespace-nowrap">
           {result.score}/{totalQuestions}
         </div>
@@ -146,14 +157,20 @@ const QuizResults = () => {
         </Button>
       </div>
 
-      {/* Bar Chart Visualization */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-sky-900 mb-4">Score Distribution</h2>
+        <h2 className="text-xl font-semibold text-sky-900 mb-4">
+          Score Distribution
+        </h2>
         <div className="flex items-end justify-around h-64 gap-4">
           {results.map((result) => (
-            <div key={`${result.participantId}-${result.quizId}`} className="flex flex-col items-center gap-2">
+            <div
+              key={`${result.participantId}-${result.quizId}`}
+              className="flex flex-col items-center gap-2"
+            >
               {renderScoreBar(result)}
-              <div className="text-sm font-medium text-gray-700 mt-2">{result.username}</div>
+              <div className="text-sm font-medium text-gray-700 mt-2">
+                {result.username}
+              </div>
               <div className="text-xs text-gray-500">
                 Questions answered: {result.questionIds.length}
               </div>
@@ -161,32 +178,50 @@ const QuizResults = () => {
           ))}
         </div>
       </div>
-      
-      {/* Detailed Results Table */}
+
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-sky-50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Rank</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Username</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Questions</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Score</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">Last Submission</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">
+                  Rank
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">
+                  Username
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">
+                  Questions
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">
+                  Score
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-sky-900">
+                  Last Submission
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {results.map((result, index) => (
-                <tr key={`${result.participantId}-${result.quizId}`} className="hover:bg-sky-50">
+                <tr
+                  key={`${result.participantId}-${result.quizId}`}
+                  className="hover:bg-sky-50"
+                >
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {currentPage * 10 + index + 1}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{result.username}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {result.username}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {result.questionIds.length} / {totalQuestions}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{result.score} / {totalQuestions}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{result.lastSubmittedAt}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {result.score} / {totalQuestions}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {result.lastSubmittedAt}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -196,14 +231,16 @@ const QuizResults = () => {
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 p-4 bg-gray-50">
             <Button
-              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
               variant="outline"
             >
               Previous
             </Button>
             <Button
-              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+              }
               disabled={currentPage === totalPages - 1}
               variant="outline"
             >
@@ -220,4 +257,4 @@ const QuizResults = () => {
   );
 };
 
-export default QuizResults; 
+export default QuizResults;

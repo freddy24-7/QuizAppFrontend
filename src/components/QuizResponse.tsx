@@ -16,10 +16,12 @@ interface QuizDetails {
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
-  
+
   const [username, setUsername] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>('username');
+  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>(
+    'username',
+  );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [error, setError] = useState('');
@@ -44,10 +46,10 @@ const QuizResponse = () => {
           throw new Error('Quiz ID is required');
         }
         console.log('Starting to fetch quiz details for quiz:', quizId);
-        
+
         const response = await fetch(`${BASE_URL}/api/quizzes/${quizId}`);
         const data: QuizDetails = await response.json();
-        
+
         console.log('Successfully fetched quiz details:', data);
         setQuestions(data.questions);
         setTimeLeft(data.durationInSeconds);
@@ -57,10 +59,12 @@ const QuizResponse = () => {
         if (err instanceof Error) {
           console.error('Error details:', {
             message: err.message,
-            stack: err.stack
+            stack: err.stack,
           });
         }
-        setError('Failed to load quiz details. Please check the quiz ID and try again.');
+        setError(
+          'Failed to load quiz details. Please check the quiz ID and try again.',
+        );
         setIsLoading(false);
       }
     };
@@ -71,7 +75,7 @@ const QuizResponse = () => {
   useEffect(() => {
     if (currentStep === 'questions' && timeLeft > 0 && !isTimeUp) {
       const timer = setInterval(() => {
-        setTimeLeft(prev => {
+        setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
             setIsTimeUp(true);
@@ -116,7 +120,8 @@ const QuizResponse = () => {
       toast.success('Welcome to the quiz!');
     } catch (err) {
       console.error('Phone number validation failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Invalid phone number format';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Invalid phone number format';
       toast.error(errorMessage);
       setError(errorMessage);
     }
@@ -136,25 +141,27 @@ const QuizResponse = () => {
       }
 
       const currentQuestion = questions[currentQuestionIndex];
-      
+
       // Log the full submission data
       const submissionData: QuizAnswerResponse = {
         phoneNumber,
         username,
         questionId: currentQuestion.id,
         selectedAnswer,
-        quizId: quizId
+        quizId: quizId,
       };
 
       console.log('Full submission data:', submissionData);
-      
+
       await api.submitAnswer(submissionData);
       console.log('Answer submitted successfully');
       toast.success('Answer submitted successfully!');
 
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
-        toast.info(`Moving to question ${currentQuestionIndex + 2} of ${questions.length}`);
+        toast.info(
+          `Moving to question ${currentQuestionIndex + 2} of ${questions.length}`,
+        );
       } else {
         setSuccess('Thank you for completing the quiz!');
         toast.success('Quiz completed! Thank you for participating!');
@@ -200,7 +207,9 @@ const QuizResponse = () => {
     return (
       <div className="max-w-md mx-auto mt-8 p-6 bg-red-50 rounded-lg">
         <p className="text-red-600 text-xl font-semibold mb-2">Time's Up!</p>
-        <p className="text-gray-700 mb-4">You've run out of time to complete the quiz.</p>
+        <p className="text-gray-700 mb-4">
+          You've run out of time to complete the quiz.
+        </p>
       </div>
     );
   }
@@ -208,7 +217,9 @@ const QuizResponse = () => {
   if (currentStep === 'username') {
     return (
       <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-sky-900 mb-6">Welcome to the Quiz</h2>
+        <h2 className="text-2xl font-bold text-sky-900 mb-6">
+          Welcome to the Quiz
+        </h2>
         <form onSubmit={handleUsernameSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
@@ -230,7 +241,9 @@ const QuizResponse = () => {
               pattern="06\d{8}"
               required
             />
-            <p className="text-sm text-gray-500">Must be 10 digits starting with 06</p>
+            <p className="text-sm text-gray-500">
+              Must be 10 digits starting with 06
+            </p>
           </div>
           <Button type="submit" className="w-full">
             Start Quiz
@@ -250,15 +263,17 @@ const QuizResponse = () => {
           </span>
           <span className="text-sm text-sky-600">User: {username}</span>
         </div>
-        <h2 className="text-xl font-semibold text-sky-900 mb-4">{currentQuestion.text}</h2>
+        <h2 className="text-xl font-semibold text-sky-900 mb-4">
+          {currentQuestion.text}
+        </h2>
       </div>
-      
+
       <div className="flex justify-between items-center mb-6">
         <div className="text-lg font-semibold text-sky-600">
           Time Left: {formatTime(timeLeft)}
         </div>
       </div>
-      
+
       <div className="space-y-4">
         {currentQuestion.options.map((option, index) => (
           <Button
@@ -275,4 +290,4 @@ const QuizResponse = () => {
   );
 };
 
-export default QuizResponse; 
+export default QuizResponse;
