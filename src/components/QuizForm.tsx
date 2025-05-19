@@ -10,6 +10,7 @@ import InviteParticipants from './InviteParticipants';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../services/api';
+import { toast } from 'react-toastify';
 
 interface Option {
   text: string;
@@ -53,7 +54,6 @@ const QuizForm = () => {
   });
 
   const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<'basic' | 'questions' | 'participants' | 'invite' | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [showAddQuestionPrompt, setShowAddQuestionPrompt] = useState<boolean>(false);
@@ -135,69 +135,59 @@ const QuizForm = () => {
     }
   };
 
-  const validatePhoneNumbers = () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate quiz data
+    if (!quizData.title.trim()) {
+      toast.error('Please enter a quiz title');
+      return;
+    }
+
+    if (quizData.questions.length === 0) {
+      toast.error('Please add at least one question');
+      return;
+    }
+
+    if (quizData.participants.length === 0) {
+      toast.error('Please add at least one participant');
+      return;
+    }
+
+    // Validate all questions
+    for (const question of quizData.questions) {
+      if (!question.text.trim()) {
+        toast.error('Please fill in all question texts');
+        return;
+      }
+      if (question.options.some(o => !o.text.trim())) {
+        toast.error('Please fill in all options');
+        return;
+      }
+      if (!question.options.some(o => o.correct)) {
+        toast.error('Please select at least one correct answer for each question');
+        return;
+      }
+    }
+
+    // Validate all participants
     for (const participant of quizData.participants) {
+      if (!participant.phoneNumber.trim()) {
+        toast.error('Please fill in all phone numbers');
+        return;
+      }
       try {
         formatPhoneNumber(participant.phoneNumber);
       } catch (err) {
-        throw new Error(`Invalid phone number format. Numbers should be 8 digits starting with 06 (e.g., 06123456)`);
+        toast.error('Invalid phone number format. Numbers should be 8 digits starting with 06 (e.g., 06123456)');
+        return;
       }
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
 
     try {
-      console.log('Starting quiz submission with BASE_URL:', BASE_URL);
-      
-      // Validate form
-      if (!quizData.title.trim()) {
-        setCurrentStep('basic');
-        throw new Error('Please enter a quiz title');
-      }
-
-      if (quizData.questions.some((q) => !q.text.trim())) {
-        setCurrentStep('questions');
-        throw new Error('Please fill in all questions');
-      }
-
-      if (
-        quizData.questions.some((q) => q.options.some((o) => !o.text.trim()))
-      ) {
-        setCurrentStep('questions');
-        throw new Error('Please fill in all options');
-      }
-
-      if (quizData.questions.some((q) => !q.options.some((o) => o.correct))) {
-        setCurrentStep('questions');
-        throw new Error('Each question must have at least one correct answer');
-      }
-
-      if (quizData.participants.some((p) => !p.phoneNumber.trim())) {
-        setCurrentStep('participants');
-        throw new Error('Please fill in all phone numbers');
-      }
-
-      // Validate phone number format
-      try {
-        validatePhoneNumbers();
-      } catch (err) {
-        setCurrentStep('participants');
-        throw err;
-      }
-
-      // Store participants for invites before clearing form
-      setInviteParticipants(quizData.participants.filter(p => p.phoneNumber.trim() !== ''));
-
-      // Format the data to match backend expectations
       const submissionData = {
         ...quizData,
-        participants: quizData.participants.map(p => ({
-          phoneNumber: p.phoneNumber
-        }))
+        startTime: new Date(quizData.startTime).toISOString()
       };
 
       console.log('Attempting to create quiz with data:', {
@@ -205,63 +195,61 @@ const QuizForm = () => {
         data: submissionData
       });
 
-      try {
-        const response = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
-        console.log('Quiz creation response:', response.data);
-        
-        if (!response.data) {
-          console.error('Empty response received from server');
-          throw new Error('Failed to create quiz: Empty response received');
-        }
-
-        // The response should now have a clean structure with an id field
-        const quizId = response.data.id;
-        
-        if (!quizId) {
-          console.error('Response data missing quiz ID:', response.data);
-          throw new Error('Failed to create quiz: No quiz ID found in response');
-        }
-
-        console.log('Quiz created successfully with ID:', quizId);
-        setCreatedQuizId(quizId.toString());
-        setSuccess('Quiz created successfully!');
-        setCurrentStep('invite');
-
-        // Clear the form data after successful submission
-        setQuizData({
-          title: '',
-          durationInSeconds: 120,
-          startTime: new Date().toISOString(),
-          closed: false,
-          questions: [
-            {
-              text: '',
-              options: [
-                { text: '', correct: false },
-                { text: '', correct: false },
-              ],
-            },
-          ],
-          participants: [{ phoneNumber: '' }],
-        });
-      } catch (error) {
-        if (error instanceof AxiosError) {
-          console.error('Axios error details:', {
-            error,
-            response: error.response?.data,
-            status: error.response?.status,
-            headers: error.response?.headers
-          });
-        }
-        throw error;
+      const response = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
+      console.log('Quiz creation response:', response.data);
+      
+      if (!response.data) {
+        console.error('Empty response received from server');
+        toast.error('Failed to create quiz: Empty response received');
+        throw new Error('Failed to create quiz: Empty response received');
       }
-    } catch (err) {
-      console.error('Quiz creation error:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'An error occurred while creating the quiz'
-      );
+
+      const quizId = response.data.id;
+      
+      if (!quizId) {
+        console.error('Response data missing quiz ID:', response.data);
+        toast.error('Failed to create quiz: No quiz ID found in response');
+        throw new Error('Failed to create quiz: No quiz ID found in response');
+      }
+
+      console.log('Quiz created successfully with ID:', quizId);
+      setCreatedQuizId(quizId.toString());
+      toast.success('Quiz created successfully!');
+      setCurrentStep('invite');
+
+      // Store participants for invites before clearing form
+      setInviteParticipants(quizData.participants.filter(p => p.phoneNumber.trim() !== ''));
+
+      // Clear the form data after successful submission
+      setQuizData({
+        title: '',
+        durationInSeconds: 120,
+        startTime: new Date().toISOString(),
+        closed: false,
+        questions: [
+          {
+            text: '',
+            options: [
+              { text: '', correct: false },
+              { text: '', correct: false },
+            ],
+          },
+        ],
+        participants: [{ phoneNumber: '' }],
+      });
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('Axios error details:', {
+          error,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers
+        });
+        toast.error(error.response?.data?.message || 'Failed to create quiz');
+      } else {
+        toast.error('An unexpected error occurred');
+      }
+      throw error;
     }
   };
 
@@ -277,20 +265,21 @@ const QuizForm = () => {
     
     // Validate current question
     if (!currentQuestion.text.trim()) {
-      setError('Please fill in the question text');
+      toast.error('Please fill in the question text');
       return;
     }
     if (currentQuestion.options.some(o => !o.text.trim())) {
-      setError('Please fill in all options');
+      toast.error('Please fill in all options');
       return;
     }
     if (!currentQuestion.options.some(o => o.correct)) {
-      setError('Please select at least one correct answer');
+      toast.error('Please select at least one correct answer');
       return;
     }
 
     setError('');
     setShowAddQuestionPrompt(true);
+    toast.success('Question added successfully!');
   };
 
   const handleAddAnotherQuestion = () => {
@@ -308,11 +297,13 @@ const QuizForm = () => {
       questions: [...prev.questions, newQuestion]
     }));
     setCurrentQuestionIndex(quizData.questions.length);
+    toast.info('New question added. Please fill in the details.');
   };
 
   const handleFinishQuestions = () => {
     setShowAddQuestionPrompt(false);
     setCurrentStep('participants');
+    toast.info('Moving to participant section');
   };
 
   const renderBasicInfoModal = () => (
@@ -648,12 +639,6 @@ const QuizForm = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-6">
           {error}
-        </div>
-      )}
-
-      {success && currentStep !== 'invite' && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6">
-          {success}
         </div>
       )}
 

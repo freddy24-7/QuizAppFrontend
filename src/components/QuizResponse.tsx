@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import api, { Question, QuizAnswerResponse } from '../services/api';
 import { formatPhoneNumber } from '../utils/whatsappUtils';
 import { BASE_URL } from '../services/api';
+
+interface QuizDetails {
+  durationInSeconds: number;
+  questions: Question[];
+}
 
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
@@ -19,6 +25,8 @@ const QuizResponse = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [isTimeUp, setIsTimeUp] = useState(false);
 
   // Log initial mount and quizId
   useEffect(() => {
@@ -27,35 +35,60 @@ const QuizResponse = () => {
     console.log('Current BASE_URL:', BASE_URL);
   }, [quizId]);
 
-  // Fetch questions when component mounts
+  // Fetch questions and quiz details when component mounts
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchQuizDetails = async () => {
       try {
         if (!quizId) {
           console.error('No quizId found in URL parameters');
           throw new Error('Quiz ID is required');
         }
-        console.log('Starting to fetch questions for quiz:', quizId);
-        console.log('Making request to:', `${BASE_URL}/api/quizzes/${quizId}`);
+        console.log('Starting to fetch quiz details for quiz:', quizId);
         
-        const questions = await api.getQuestions(quizId);
-        console.log('Successfully fetched questions:', questions);
-        setQuestions(questions);
+        const response = await fetch(`${BASE_URL}/api/quizzes/${quizId}`);
+        const data: QuizDetails = await response.json();
+        
+        console.log('Successfully fetched quiz details:', data);
+        setQuestions(data.questions);
+        setTimeLeft(data.durationInSeconds);
         setIsLoading(false);
       } catch (err) {
-        console.error('Error fetching questions:', err);
+        console.error('Error fetching quiz details:', err);
         if (err instanceof Error) {
           console.error('Error details:', {
             message: err.message,
             stack: err.stack
           });
         }
-        setError('Failed to load quiz questions. Please check the quiz ID and try again.');
+        setError('Failed to load quiz details. Please check the quiz ID and try again.');
         setIsLoading(false);
       }
     };
-    fetchQuestions();
+    fetchQuizDetails();
   }, [quizId]);
+
+  // Timer effect
+  useEffect(() => {
+    if (currentStep === 'questions' && timeLeft > 0 && !isTimeUp) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setIsTimeUp(true);
+            toast.error('Time is up!');
+            return 0;
+          }
+          // Show warning when 30 seconds remaining
+          if (prev === 30) {
+            toast.warning('30 seconds remaining!');
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [currentStep, timeLeft, isTimeUp]);
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow digits and limit to 10 characters
@@ -66,11 +99,11 @@ const QuizResponse = () => {
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      setError('Please enter a username');
+      toast.error('Please enter a username');
       return;
     }
     if (!phoneNumber.trim()) {
-      setError('Please enter your phone number');
+      toast.error('Please enter your phone number');
       return;
     }
 
@@ -80,17 +113,25 @@ const QuizResponse = () => {
       console.log('Phone number validated successfully:', phoneNumber);
       setError('');
       setCurrentStep('questions');
+      toast.success('Welcome to the quiz!');
     } catch (err) {
       console.error('Phone number validation failed:', err);
-      setError(err instanceof Error ? err.message : 'Invalid phone number format');
+      const errorMessage = err instanceof Error ? err.message : 'Invalid phone number format';
+      toast.error(errorMessage);
+      setError(errorMessage);
     }
   };
 
   const handleAnswerSubmit = async (selectedAnswer: string) => {
+    if (isTimeUp) {
+      toast.error('Time is up! You cannot submit more answers.');
+      return;
+    }
+
     try {
       if (!quizId) {
         console.error('No quizId available for submission');
-        setError('Quiz ID is missing. Please check the URL.');
+        toast.error('Quiz ID is missing. Please check the URL.');
         return;
       }
 
@@ -102,23 +143,33 @@ const QuizResponse = () => {
         username,
         questionId: currentQuestion.id,
         selectedAnswer,
-        quizId: quizId // Explicitly include the quizId
+        quizId: quizId
       };
 
       console.log('Full submission data:', submissionData);
       
       await api.submitAnswer(submissionData);
       console.log('Answer submitted successfully');
+      toast.success('Answer submitted successfully!');
 
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
+        toast.info(`Moving to question ${currentQuestionIndex + 2} of ${questions.length}`);
       } else {
         setSuccess('Thank you for completing the quiz!');
+        toast.success('Quiz completed! Thank you for participating!');
       }
     } catch (err) {
       console.error('Error submitting answer:', err);
+      toast.error('Failed to submit answer. Please try again.');
       setError('Failed to submit answer. Please try again.');
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   if (isLoading) {
@@ -141,6 +192,15 @@ const QuizResponse = () => {
     return (
       <div className="max-w-md mx-auto mt-8 p-6 bg-green-50 rounded-lg">
         <p className="text-green-600">{success}</p>
+      </div>
+    );
+  }
+
+  if (isTimeUp) {
+    return (
+      <div className="max-w-md mx-auto mt-8 p-6 bg-red-50 rounded-lg">
+        <p className="text-red-600 text-xl font-semibold mb-2">Time's Up!</p>
+        <p className="text-gray-700 mb-4">You've run out of time to complete the quiz.</p>
       </div>
     );
   }
@@ -191,6 +251,12 @@ const QuizResponse = () => {
           <span className="text-sm text-sky-600">User: {username}</span>
         </div>
         <h2 className="text-xl font-semibold text-sky-900 mb-4">{currentQuestion.text}</h2>
+      </div>
+      
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-lg font-semibold text-sky-600">
+          Time Left: {formatTime(timeLeft)}
+        </div>
       </div>
       
       <div className="space-y-4">
