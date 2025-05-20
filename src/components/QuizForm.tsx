@@ -191,7 +191,7 @@ const QuizForm = () => {
       const submissionData = {
         title: quizData.title,
         durationInSeconds: quizData.durationInSeconds,
-        startTime: new Date(quizData.startTime).toISOString(),
+        startTime: new Date(quizData.startTime).toISOString().slice(0, 19),
         closed: quizData.closed,
         questions: quizData.questions.map(q => ({
           text: q.text,
