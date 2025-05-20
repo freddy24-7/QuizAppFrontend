@@ -10,7 +10,6 @@ import BasicInfoStep from './steps/BasicInfoStep';
 import QuestionModal from '@/components/questions/QuestionModal.tsx';
 import AddQuestionPromptModal from './steps/AddQuestionPromptModal';
 import ParticipantsStep from './steps/ParticipantsStep';
-import InviteModal from './steps/InviteModal';
 
 interface Option {
   text: string;
@@ -54,14 +53,10 @@ const QuizForm = () => {
   });
 
   const [currentStep, setCurrentStep] = useState<
-    'basic' | 'questions' | 'participants' | 'invite' | null
+    'basic' | 'questions' | 'participants' | null
   >(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showAddQuestionPrompt, setShowAddQuestionPrompt] = useState(false);
-  const [createdQuizId, setCreatedQuizId] = useState('');
-  const [inviteParticipants, setInviteParticipants] = useState<Participant[]>(
-    [],
-  );
 
   const navigate = useNavigate();
 
@@ -197,6 +192,17 @@ const QuizForm = () => {
         ...quizData,
         startTime: new Date(quizData.startTime).toISOString(),
       };
+      
+      // Log the complete payload that will be sent to backend
+      console.log('Quiz submission payload:', JSON.stringify({
+        title: submissionData.title,
+        durationInSeconds: submissionData.durationInSeconds,
+        startTime: submissionData.startTime,
+        closed: submissionData.closed,
+        questions: submissionData.questions,
+        participants: submissionData.participants
+      }, null, 2));
+
       const res = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
       const id = res.data?.id;
       if (!id) {
@@ -204,10 +210,8 @@ const QuizForm = () => {
         return;
       }
 
-      setCreatedQuizId(id.toString());
-      setInviteParticipants(quizData.participants);
       toast.success('Quiz created!');
-      setCurrentStep('invite');
+      navigate(`/quiz/results/${id}`);
 
       setQuizData({
         title: '',
@@ -232,12 +236,6 @@ const QuizForm = () => {
       }
       toast.error(msg);
     }
-  };
-
-  const handleInvitesSent = () => {
-    setCurrentStep(null);
-    setInviteParticipants([]);
-    navigate(`/quiz/results/${createdQuizId}`);
   };
 
   return (
@@ -297,14 +295,6 @@ const QuizForm = () => {
         onRemove={removeParticipant}
         onBack={() => setCurrentStep('questions')}
         onSubmit={handleSubmit}
-        onClose={() => setCurrentStep(null)}
-      />
-
-      <InviteModal
-        isOpen={currentStep === 'invite'}
-        quizId={createdQuizId}
-        participants={inviteParticipants}
-        onInvitesSent={handleInvitesSent}
         onClose={() => setCurrentStep(null)}
       />
     </div>

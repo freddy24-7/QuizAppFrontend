@@ -5,7 +5,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import api, { Question, QuizAnswerResponse } from '../services/api';
-import { formatPhoneNumber } from '../utils/whatsappUtils';
 import { BASE_URL } from '../services/api';
 
 interface QuizDetails {
@@ -111,20 +110,13 @@ const QuizResponse = () => {
       return;
     }
 
-    try {
-      // Validate phone number format
-      formatPhoneNumber(phoneNumber);
-      console.log('Phone number validated successfully:', phoneNumber);
-      setError('');
-      setCurrentStep('questions');
-      toast.success('Welcome to the quiz!');
-    } catch (err) {
-      console.error('Phone number validation failed:', err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'Invalid phone number format';
-      toast.error(errorMessage);
-      setError(errorMessage);
+    if (!/^06\d{8}$/.test(phoneNumber)) {
+      toast.error('Phone number must be 10 digits starting with 06');
+      return;
     }
+
+    setCurrentStep('questions');
+    toast.success('Welcome to the quiz!');
   };
 
   const handleAnswerSubmit = async (selectedAnswer: string) => {
