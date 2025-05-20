@@ -189,29 +189,34 @@ const QuizForm = () => {
 
     try {
       const submissionData = {
-        ...quizData,
+        title: quizData.title,
+        durationInSeconds: quizData.durationInSeconds,
         startTime: new Date(quizData.startTime).toISOString(),
+        closed: quizData.closed,
+        questions: quizData.questions.map(q => ({
+          text: q.text,
+          options: q.options.map(o => ({
+            text: o.text,
+            correct: o.correct
+          }))
+        })),
+        participants: quizData.participants.map(p => ({
+          phoneNumber: p.phoneNumber
+        }))
       };
       
       // Log the complete payload that will be sent to backend
-      console.log('Quiz submission payload:', JSON.stringify({
-        title: submissionData.title,
-        durationInSeconds: submissionData.durationInSeconds,
-        startTime: submissionData.startTime,
-        closed: submissionData.closed,
-        questions: submissionData.questions,
-        participants: submissionData.participants
-      }, null, 2));
+      console.log('Quiz submission payload:', JSON.stringify(submissionData, null, 2));
 
       const res = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
-      const id = res.data?.id;
-      if (!id) {
-        toast.error('Missing quiz ID');
+      
+      if (!res.data || !res.data.id) {
+        toast.error('Invalid response from server');
         return;
       }
 
-      toast.success('Quiz created!');
-      navigate(`/quiz/results/${id}`);
+      toast.success('Quiz created and invites sent!');
+      navigate(`/quiz/results/${res.data.id}`);
 
       setQuizData({
         title: '',
