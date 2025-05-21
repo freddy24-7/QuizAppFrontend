@@ -6,5 +6,5 @@ export const FRONTEND_URL = 'https://quiz-app-frontend-qoqq.vercel.app';
 // export const FRONTEND_URL = 'http://localhost:5173';
 
 // Always return production URLs since we're deployed
-export const getBackendUrl = () => BACKEND_URL;
-export const getFrontendUrl = () => FRONTEND_URL;
+export const getBackendUrl = () => BACKEND_URL.replace(/\/$/, '');
+export const getFrontendUrl = () => FRONTEND_URL.replace(/\/$/, '');

@@ -55,7 +55,7 @@ export interface ResultsResponse {
 
 const api = {
   getQuestions: async (quizId: string): Promise<Question[]> => {
-    const url = `${BASE_URL}/api/quizzes/${quizId}`;
+    const url = `${BASE_URL}/api/quizzes/${quizId}`.replace(/([^:]\/)\/+/g, '$1');
     console.log('getQuestions - Full URL:', url);
     console.log('getQuestions - Headers:', {
       'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ const api = {
   },
 
   submitAnswer: async (response: QuizAnswerResponse): Promise<void> => {
-    const url = `${BASE_URL}/api/responses`;
+    const url = `${BASE_URL}/api/responses`.replace(/([^:]\/)\/+/g, '$1');
     console.log('submitAnswer - Full URL:', url);
     console.log('submitAnswer - Request Data:', response);
 
@@ -112,7 +112,7 @@ const api = {
     page: number = 0,
     size: number = 10,
   ): Promise<ResultsResponse> => {
-    const url = `${BASE_URL}/api/responses/results/${quizId}`;
+    const url = `${BASE_URL}/api/responses/results/${quizId}`.replace(/([^:]\/)\/+/g, '$1');
     console.log('getResults - Full URL:', url);
     console.log('getResults - Query Params:', { page, size });
 
