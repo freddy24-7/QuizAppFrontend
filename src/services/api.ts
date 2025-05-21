@@ -62,7 +62,7 @@ export interface ResultsResponse {
 }
 
 const api = {
-  getQuestions: async (quizId: string | number): Promise<Question[]> => {
+  getQuestions: async (quizId: string | number): Promise<QuizDTO> => {
     const numericQuizId =
       typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
 
@@ -79,12 +79,12 @@ const api = {
       const response = await axios.get<QuizDTO>(url);
       console.log('getQuestions - Raw Response:', response);
 
-      if (!response.data || !response.data.questions) {
-        console.error('Invalid quiz data structure:', response.data);
-        throw new Error('Invalid quiz data received from server');
+      if (!response.data || Object.values(response.data).every(val => val === null)) {
+        console.error('Server returned empty quiz data');
+        throw new Error('Quiz data is invalid');
       }
 
-      return response.data.questions;
+      return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
         console.error('getQuestions - Error:', {
@@ -92,6 +92,12 @@ const api = {
           response: error.response?.data,
           status: error.response?.status,
         });
+
+        if (error.response?.status === 404) {
+          throw new Error('Quiz not found');
+        } else if (error.response?.status === 500) {
+          throw new Error('Server error occurred while fetching quiz');
+        }
       }
       throw error;
     }

@@ -46,46 +46,14 @@ const QuizResponse = () => {
         console.log('Successfully fetched quiz details:', response);
 
         // Check for null/empty response
-        if (!response || (typeof response === 'object' && Object.values(response).every(val => val === null))) {
+        if (!response || Object.values(response).every(val => val === null)) {
           console.error('Server returned empty or null quiz data');
           throw new Error('Quiz not found or no longer available');
         }
 
-        // Type guard to check if response is a QuizDTO
-        const isQuizDTO = (data: any): data is QuizDTO => {
-          return (
-            data &&
-            typeof data === 'object' &&
-            'id' in data &&
-            typeof data.id === 'number' &&
-            'title' in data &&
-            typeof data.title === 'string' &&
-            'durationInSeconds' in data &&
-            typeof data.durationInSeconds === 'number' &&
-            'startTime' in data &&
-            typeof data.startTime === 'string' &&
-            'closed' in data &&
-            typeof data.closed === 'boolean' &&
-            'questions' in data &&
-            Array.isArray(data.questions) &&
-            'participants' in data &&
-            Array.isArray(data.participants)
-          );
-        };
-
-        if (isQuizDTO(response)) {
-          // If response is a complete QuizDTO
-          setQuizData(response);
-          setQuestions(response.questions);
-          setTimeLeft(response.durationInSeconds);
-        } else if (Array.isArray(response)) {
-          // If response is just an array of questions
-          setQuestions(response);
-          setTimeLeft(120); // Default duration
-        } else {
-          throw new Error('Invalid quiz data format received from server');
-        }
-
+        setQuizData(response);
+        setQuestions(response.questions);
+        setTimeLeft(response.durationInSeconds);
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching quiz details:', err);
@@ -94,10 +62,20 @@ const QuizResponse = () => {
             message: err.message,
             stack: err.stack,
           });
-          // Set user-friendly error message
-          setError(err.message === 'Quiz not found or no longer available' 
-            ? 'This quiz is no longer available. Please check with the quiz organizer.'
-            : 'Unable to load the quiz at this time. Please try again later or contact support.');
+          // Set user-friendly error message based on specific error
+          switch (err.message) {
+            case 'Quiz not found':
+              setError('This quiz does not exist. Please check the link and try again.');
+              break;
+            case 'Quiz data is invalid':
+              setError('This quiz is no longer available. Please check with the quiz organizer.');
+              break;
+            case 'Server error occurred while fetching quiz':
+              setError('Unable to load the quiz at this time. Please try again later.');
+              break;
+            default:
+              setError('An error occurred while loading the quiz. Please try again later.');
+          }
         }
         setIsLoading(false);
         // Show error toast
