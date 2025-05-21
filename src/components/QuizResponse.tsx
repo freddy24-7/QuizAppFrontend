@@ -15,12 +15,10 @@ interface QuizDetails {
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
+  const phoneNumber = searchParams.get('phoneNumber');
 
   const [username, setUsername] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>(
-    'username',
-  );
+  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>('username');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [error, setError] = useState('');
@@ -29,20 +27,21 @@ const QuizResponse = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isTimeUp, setIsTimeUp] = useState(false);
 
-  // Log initial mount and quizId
+  // Log initial mount and parameters
   useEffect(() => {
     console.log('QuizResponse component mounted');
     console.log('Current quizId from URL:', quizId);
+    console.log('Current phoneNumber from URL:', phoneNumber);
     console.log('Current BASE_URL:', BASE_URL);
-  }, [quizId]);
+  }, [quizId, phoneNumber]);
 
   // Fetch questions and quiz details when component mounts
   useEffect(() => {
     const fetchQuizDetails = async () => {
       try {
-        if (!quizId) {
-          console.error('No quizId found in URL parameters');
-          throw new Error('Quiz ID is required');
+        if (!quizId || !phoneNumber) {
+          console.error('Missing quizId or phoneNumber in URL parameters');
+          throw new Error('Quiz ID and phone number are required');
         }
         console.log('Starting to fetch quiz details for quiz:', quizId);
 
@@ -62,13 +61,13 @@ const QuizResponse = () => {
           });
         }
         setError(
-          'Failed to load quiz details. Please check the quiz ID and try again.',
+          'Failed to load quiz details. Please check the quiz link and try again.',
         );
         setIsLoading(false);
       }
     };
     fetchQuizDetails();
-  }, [quizId]);
+  }, [quizId, phoneNumber]);
 
   // Timer effect
   useEffect(() => {
@@ -93,25 +92,10 @@ const QuizResponse = () => {
     }
   }, [currentStep, timeLeft, isTimeUp]);
 
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow digits and limit to 10 characters
-    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setPhoneNumber(cleaned);
-  };
-
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
       toast.error('Please enter a username');
-      return;
-    }
-    if (!phoneNumber.trim()) {
-      toast.error('Please enter your phone number');
-      return;
-    }
-
-    if (!/^06\d{8}$/.test(phoneNumber)) {
-      toast.error('Phone number must be 10 digits starting with 06');
       return;
     }
 
@@ -126,9 +110,9 @@ const QuizResponse = () => {
     }
 
     try {
-      if (!quizId) {
-        console.error('No quizId available for submission');
-        toast.error('Quiz ID is missing. Please check the URL.');
+      if (!quizId || !phoneNumber) {
+        console.error('Missing quizId or phoneNumber');
+        toast.error('Invalid quiz link. Please check the URL.');
         return;
       }
 
@@ -222,20 +206,6 @@ const QuizResponse = () => {
               placeholder="Enter your username"
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <Input
-              id="phoneNumber"
-              value={phoneNumber}
-              onChange={handlePhoneNumberChange}
-              placeholder="Enter your phone number (e.g., 0612345678)"
-              pattern="06\d{8}"
-              required
-            />
-            <p className="text-sm text-gray-500">
-              Must be 10 digits starting with 06
-            </p>
           </div>
           <Button type="submit" className="w-full">
             Start Quiz
