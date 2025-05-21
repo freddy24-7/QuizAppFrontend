@@ -7,18 +7,15 @@ import { Label } from './ui/label';
 import api, { Question, QuizAnswerResponse } from '../services/api';
 import { BASE_URL } from '../services/api';
 
-interface QuizDetails {
-  durationInSeconds: number;
-  questions: Question[];
-}
-
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
   const quizId = searchParams.get('quizId');
   const phoneNumber = searchParams.get('phoneNumber');
 
   const [username, setUsername] = useState('');
-  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>('username');
+  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>(
+    'username',
+  );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [error, setError] = useState('');
@@ -46,18 +43,18 @@ const QuizResponse = () => {
         console.log('Starting to fetch quiz details for quiz:', quizId);
 
         const questions = await api.getQuestions(quizId);
-        
+
         if (!questions || questions.length === 0) {
           console.error('No questions found for quiz:', quizId);
           throw new Error('No questions found for this quiz');
         }
 
-        console.log('Successfully fetched quiz details:', { 
-          quizId, 
+        console.log('Successfully fetched quiz details:', {
+          quizId,
           questionCount: questions.length,
-          firstQuestion: questions[0] 
+          firstQuestion: questions[0],
         });
-        
+
         setQuestions(questions);
         // Default duration if not provided
         setTimeLeft(120);

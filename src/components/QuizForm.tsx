@@ -193,23 +193,26 @@ const QuizForm = () => {
         durationInSeconds: quizData.durationInSeconds,
         startTime: new Date(quizData.startTime).toISOString().slice(0, 19),
         closed: quizData.closed,
-        questions: quizData.questions.map(q => ({
+        questions: quizData.questions.map((q) => ({
           text: q.text,
-          options: q.options.map(o => ({
+          options: q.options.map((o) => ({
             text: o.text,
-            correct: o.correct
-          }))
+            correct: o.correct,
+          })),
         })),
-        participants: quizData.participants.map(p => ({
-          phoneNumber: p.phoneNumber
-        }))
+        participants: quizData.participants.map((p) => ({
+          phoneNumber: p.phoneNumber,
+        })),
       };
-      
+
       // Log the complete payload that will be sent to backend
-      console.log('Quiz submission payload:', JSON.stringify(submissionData, null, 2));
+      console.log(
+        'Quiz submission payload:',
+        JSON.stringify(submissionData, null, 2),
+      );
 
       const res = await axios.post(`${BASE_URL}/api/quizzes`, submissionData);
-      
+
       if (!res.data || !res.data.id) {
         toast.error('Invalid response from server');
         return;

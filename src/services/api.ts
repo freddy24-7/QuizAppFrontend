@@ -11,6 +11,12 @@ export interface Question {
   options: { text: string }[];
 }
 
+interface QuestionResponse {
+  id: number;
+  text: string;
+  options?: { text: string }[];
+}
+
 export interface QuizAnswerResponse {
   phoneNumber: string;
   username: string;
@@ -58,16 +64,16 @@ const api = {
     try {
       const response = await axios.get(url);
       console.log('getQuestions - Raw Response:', response);
-      
+
       // Handle both response formats - direct questions array or nested in quiz object
-      const questions = Array.isArray(response.data) 
-        ? response.data 
+      const questions = Array.isArray(response.data)
+        ? response.data
         : response.data.questions || [];
-      
-      return questions.map((q: any) => ({
+
+      return questions.map((q: QuestionResponse) => ({
         id: q.id,
         text: q.text,
-        options: q.options || []
+        options: q.options || [],
       }));
     } catch (error) {
       if (error instanceof AxiosError) {
