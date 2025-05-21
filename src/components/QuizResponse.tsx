@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { AxiosError } from 'axios';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -13,17 +14,17 @@ const QuizResponse = () => {
   const quizId = quizIdParam ? parseInt(quizIdParam, 10) : null;
 
   const [username, setUsername] = useState('');
-  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>(
-    'username',
-  );
+  const [currentStep, setCurrentStep] = useState<'username' | 'questions'>('username');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizData, setQuizData] = useState<QuizDTO | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const [lastSubmissionTime, setLastSubmissionTime] = useState<number>(0);
 
   // Log initial mount and parameters
   useEffect(() => {
@@ -146,7 +147,21 @@ const QuizResponse = () => {
       return;
     }
 
+    if (isSubmitting) {
+      return; // Prevent multiple submissions while one is in progress
+    }
+
+    // Rate limiting - prevent submissions within 1 second of each other
+    const now = Date.now();
+    if (now - lastSubmissionTime < 1000) {
+      toast.warning('Please wait before submitting another answer');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      setLastSubmissionTime(now);
+
       if (!quizId || !phoneNumber) {
         console.error('Missing quizId or phoneNumber');
         toast.error('Invalid quiz link. Please check the URL.');
@@ -171,17 +186,21 @@ const QuizResponse = () => {
 
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
-        toast.info(
-          `Moving to question ${currentQuestionIndex + 2} of ${questions.length}`,
-        );
+        toast.info(`Moving to question ${currentQuestionIndex + 2} of ${questions.length}`);
       } else {
         setSuccess('Thank you for completing the quiz!');
         toast.success('Quiz completed! Thank you for participating!');
       }
     } catch (err) {
       console.error('Error submitting answer:', err);
-      toast.error('Failed to submit answer. Please try again.');
+      if (err instanceof AxiosError && err.response?.status === 429) {
+        toast.error('Too many attempts. Please wait a moment before trying again.');
+      } else {
+        toast.error('Failed to submit answer. Please try again.');
+      }
       setError('Failed to submit answer. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -288,9 +307,15 @@ const QuizResponse = () => {
             key={index}
             onClick={() => handleAnswerSubmit(option.text)}
             variant="outline"
-            className="w-full text-left justify-start h-auto py-4 px-6"
+            className="w-full text-left justify-start h-auto py-4 px-6 relative"
+            disabled={isSubmitting}
           >
             {option.text}
+            {isSubmitting && (
+              <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sky-600"></div>
+              </div>
+            )}
           </Button>
         ))}
       </div>
