@@ -38,8 +38,8 @@ const QuizResults = () => {
       return;
     }
     try {
-      const questions = await api.getQuestions(quizId);
-      setTotalQuestions(questions.length);
+      const quizData = await api.getQuestions(quizId);
+      setTotalQuestions(quizData.questions.length);
     } catch (err) {
       console.error('Error fetching quiz details:', err);
       setError('Failed to load quiz details');

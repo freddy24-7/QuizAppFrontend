@@ -46,7 +46,7 @@ const QuizResponse = () => {
         console.log('Successfully fetched quiz details:', response);
 
         // Check for null/empty response
-        if (!response || Object.values(response).every(val => val === null)) {
+        if (!response || Object.values(response).every((val) => val === null)) {
           console.error('Server returned empty or null quiz data');
           throw new Error('Quiz not found or no longer available');
         }
@@ -65,16 +65,24 @@ const QuizResponse = () => {
           // Set user-friendly error message based on specific error
           switch (err.message) {
             case 'Quiz not found':
-              setError('This quiz does not exist. Please check the link and try again.');
+              setError(
+                'This quiz does not exist. Please check the link and try again.',
+              );
               break;
             case 'Quiz data is invalid':
-              setError('This quiz is no longer available. Please check with the quiz organizer.');
+              setError(
+                'This quiz is no longer available. Please check with the quiz organizer.',
+              );
               break;
             case 'Server error occurred while fetching quiz':
-              setError('Unable to load the quiz at this time. Please try again later.');
+              setError(
+                'Unable to load the quiz at this time. Please try again later.',
+              );
               break;
             default:
-              setError('An error occurred while loading the quiz. Please try again later.');
+              setError(
+                'An error occurred while loading the quiz. Please try again later.',
+              );
           }
         }
         setIsLoading(false);

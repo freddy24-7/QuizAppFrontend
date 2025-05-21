@@ -79,7 +79,10 @@ const api = {
       const response = await axios.get<QuizDTO>(url);
       console.log('getQuestions - Raw Response:', response);
 
-      if (!response.data || Object.values(response.data).every(val => val === null)) {
+      if (
+        !response.data ||
+        Object.values(response.data).every((val) => val === null)
+      ) {
         console.error('Server returned empty quiz data');
         throw new Error('Quiz data is invalid');
       }
