@@ -57,8 +57,18 @@ const api = {
 
     try {
       const response = await axios.get(url);
-      console.log('getQuestions - Response:', response.data);
-      return response.data.questions;
+      console.log('getQuestions - Raw Response:', response);
+      
+      // Handle both response formats - direct questions array or nested in quiz object
+      const questions = Array.isArray(response.data) 
+        ? response.data 
+        : response.data.questions || [];
+      
+      return questions.map((q: any) => ({
+        id: q.id,
+        text: q.text,
+        options: q.options || []
+      }));
     } catch (error) {
       if (error instanceof AxiosError) {
         console.error('getQuestions - Error:', {

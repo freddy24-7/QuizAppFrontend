@@ -45,12 +45,22 @@ const QuizResponse = () => {
         }
         console.log('Starting to fetch quiz details for quiz:', quizId);
 
-        const response = await fetch(`${BASE_URL}/api/quizzes/${quizId}`);
-        const data: QuizDetails = await response.json();
+        const questions = await api.getQuestions(quizId);
+        
+        if (!questions || questions.length === 0) {
+          console.error('No questions found for quiz:', quizId);
+          throw new Error('No questions found for this quiz');
+        }
 
-        console.log('Successfully fetched quiz details:', data);
-        setQuestions(data.questions);
-        setTimeLeft(data.durationInSeconds);
+        console.log('Successfully fetched quiz details:', { 
+          quizId, 
+          questionCount: questions.length,
+          firstQuestion: questions[0] 
+        });
+        
+        setQuestions(questions);
+        // Default duration if not provided
+        setTimeLeft(120);
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching quiz details:', err);
