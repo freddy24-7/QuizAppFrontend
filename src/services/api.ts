@@ -22,18 +22,18 @@ export interface QuizAnswerResponse {
   username: string;
   questionId: number;
   selectedAnswer: string;
-  quizId: string;
+  quizId: number;
 }
 
 // Updated to match Spring's JSON response structure
 export interface QuizResponseData {
-  id: string; // responseId
-  createdAt: string; // timestamp
+  id: number;
+  createdAt: string;
   selectedAnswer: string;
   username: string;
-  participantId: string;
+  participantId: number;
   questionId: number;
-  quizId: string;
+  quizId: number;
 }
 
 export interface QuizResult {
@@ -54,8 +54,10 @@ export interface ResultsResponse {
 }
 
 const api = {
-  getQuestions: async (quizId: string): Promise<Question[]> => {
-    const url = `${BASE_URL}/api/quizzes/${quizId}`.replace(/([^:]\/)\/+/g, '$1');
+  getQuestions: async (quizId: string | number): Promise<Question[]> => {
+    const numericQuizId = typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
+    
+    const url = `${BASE_URL}/api/quizzes/${numericQuizId}`.replace(/([^:]\/)\/+/g, '$1');
     console.log('getQuestions - Full URL:', url);
     console.log('getQuestions - Headers:', {
       'Content-Type': 'application/json',
@@ -108,11 +110,13 @@ const api = {
   },
 
   getResults: async (
-    quizId: string,
+    quizId: string | number,
     page: number = 0,
     size: number = 10,
   ): Promise<ResultsResponse> => {
-    const url = `${BASE_URL}/api/responses/results/${quizId}`.replace(/([^:]\/)\/+/g, '$1');
+    const numericQuizId = typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
+    
+    const url = `${BASE_URL}/api/responses/results/${numericQuizId}`.replace(/([^:]\/)\/+/g, '$1');
     console.log('getResults - Full URL:', url);
     console.log('getResults - Query Params:', { page, size });
 
@@ -122,7 +126,6 @@ const api = {
       console.log('getResults - Response Data:', response.data);
       console.log('getResults - Results Array:', response.data.results);
 
-      // Log each result's structure
       if (response.data.results && response.data.results.length > 0) {
         console.log(
           'First result structure:',

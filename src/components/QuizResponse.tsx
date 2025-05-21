@@ -9,8 +9,9 @@ import { BASE_URL } from '../services/api';
 
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
-  const quizId = searchParams.get('quizId');
+  const quizIdParam = searchParams.get('quizId');
   const phoneNumber = searchParams.get('phoneNumber');
+  const quizId = quizIdParam ? parseInt(quizIdParam, 10) : null;
 
   const [username, setUsername] = useState('');
   const [currentStep, setCurrentStep] = useState<'username' | 'questions'>(
