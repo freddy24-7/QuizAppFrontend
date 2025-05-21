@@ -5,8 +5,8 @@ const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-[calc(100vh-10rem)] w-full bg-gradient-to-b from-sky-50 to-sky-100">
-      <div className="w-full h-full flex items-center justify-center">
+    <div className="min-h-full w-full bg-gradient-to-b from-sky-50 to-sky-100 py-8">
+      <div className="w-full flex items-center justify-center">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4 max-w-7xl mx-auto">
           {/* Image Section */}
           <div className="relative w-full h-full min-h-[300px] md:min-h-[400px]">

@@ -2,8 +2,8 @@ import QuizForm from './QuizForm';
 
 const Quiz = () => {
   return (
-    <div className="h-[calc(100vh-10rem)] w-full bg-gradient-to-b from-sky-50 to-sky-100 overflow-y-auto">
-      <div className="w-full h-full">
+    <div className="min-h-full w-full bg-gradient-to-b from-sky-50 to-sky-100">
+      <div className="w-full py-8">
         <QuizForm />
       </div>
     </div>

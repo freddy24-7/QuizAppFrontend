@@ -14,7 +14,7 @@ function App() {
     <Router>
       <div className="min-h-screen w-full flex flex-col bg-sky-50">
         <Header />
-        <main className="flex-1 w-full mt-20 mb-20">
+        <main className="flex-1 w-full mt-16 mb-16 px-4">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/quiz" element={<Quiz />} />
