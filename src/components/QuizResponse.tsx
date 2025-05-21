@@ -42,21 +42,44 @@ const QuizResponse = () => {
         }
         console.log('Starting to fetch quiz details for quiz:', quizId);
 
-        const quizDetails = await api.getQuestions(quizId);
-        console.log('Successfully fetched quiz details:', quizDetails);
+        const response = await api.getQuestions(quizId);
+        console.log('Successfully fetched quiz details:', response);
 
-        if (!quizDetails || !Array.isArray(quizDetails)) {
-          console.error('Invalid quiz data received:', quizDetails);
-          throw new Error('Invalid quiz data received from server');
-        }
+        // Type guard to check if response is a QuizDTO
+        const isQuizDTO = (data: any): data is QuizDTO => {
+          return (
+            data &&
+            typeof data === 'object' &&
+            'id' in data &&
+            typeof data.id === 'number' &&
+            'title' in data &&
+            typeof data.title === 'string' &&
+            'durationInSeconds' in data &&
+            typeof data.durationInSeconds === 'number' &&
+            'startTime' in data &&
+            typeof data.startTime === 'string' &&
+            'closed' in data &&
+            typeof data.closed === 'boolean' &&
+            'questions' in data &&
+            Array.isArray(data.questions) &&
+            'participants' in data &&
+            Array.isArray(data.participants)
+          );
+        };
 
-        setQuestions(quizDetails);
-        if ('durationInSeconds' in quizDetails) {
-          setQuizData(quizDetails as QuizDTO);
-          setTimeLeft(quizDetails.durationInSeconds);
+        if (isQuizDTO(response)) {
+          // If response is a complete QuizDTO
+          setQuizData(response);
+          setQuestions(response.questions);
+          setTimeLeft(response.durationInSeconds);
+        } else if (Array.isArray(response)) {
+          // If response is just an array of questions
+          setQuestions(response);
+          setTimeLeft(120); // Default duration
         } else {
-          setTimeLeft(120); // Default duration if not provided
+          throw new Error('Invalid quiz data format received from server');
         }
+
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching quiz details:', err);
