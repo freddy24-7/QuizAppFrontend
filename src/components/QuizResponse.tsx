@@ -4,8 +4,7 @@ import { toast } from 'react-toastify';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import api, { Question, QuizAnswerResponse } from '../services/api';
-import { BASE_URL } from '../services/api';
+import api, { Question, QuizAnswerResponse, QuizDTO } from '../services/api';
 
 const QuizResponse = () => {
   const [searchParams] = useSearchParams();
@@ -19,6 +18,7 @@ const QuizResponse = () => {
   );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizData, setQuizData] = useState<QuizDTO | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -30,10 +30,9 @@ const QuizResponse = () => {
     console.log('QuizResponse component mounted');
     console.log('Current quizId from URL:', quizId);
     console.log('Current phoneNumber from URL:', phoneNumber);
-    console.log('Current BASE_URL:', BASE_URL);
   }, [quizId, phoneNumber]);
 
-  // Fetch questions and quiz details when component mounts
+  // Fetch quiz details when component mounts
   useEffect(() => {
     const fetchQuizDetails = async () => {
       try {
@@ -43,22 +42,21 @@ const QuizResponse = () => {
         }
         console.log('Starting to fetch quiz details for quiz:', quizId);
 
-        const questions = await api.getQuestions(quizId);
+        const quizDetails = await api.getQuestions(quizId);
+        console.log('Successfully fetched quiz details:', quizDetails);
 
-        if (!questions || questions.length === 0) {
-          console.error('No questions found for quiz:', quizId);
-          throw new Error('No questions found for this quiz');
+        if (!quizDetails || !Array.isArray(quizDetails)) {
+          console.error('Invalid quiz data received:', quizDetails);
+          throw new Error('Invalid quiz data received from server');
         }
 
-        console.log('Successfully fetched quiz details:', {
-          quizId,
-          questionCount: questions.length,
-          firstQuestion: questions[0],
-        });
-
-        setQuestions(questions);
-        // Default duration if not provided
-        setTimeLeft(120);
+        setQuestions(quizDetails);
+        if ('durationInSeconds' in quizDetails) {
+          setQuizData(quizDetails as QuizDTO);
+          setTimeLeft(quizDetails.durationInSeconds);
+        } else {
+          setTimeLeft(120); // Default duration if not provided
+        }
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching quiz details:', err);
@@ -107,6 +105,19 @@ const QuizResponse = () => {
       return;
     }
 
+    // Check if quiz is closed
+    if (quizData?.closed) {
+      toast.error('This quiz is no longer accepting responses');
+      return;
+    }
+
+    // Check if quiz hasn't started yet
+    const startTime = quizData?.startTime ? new Date(quizData.startTime) : null;
+    if (startTime && startTime > new Date()) {
+      toast.error('This quiz has not started yet');
+      return;
+    }
+
     setCurrentStep('questions');
     toast.success('Welcome to the quiz!');
   };
@@ -126,13 +137,12 @@ const QuizResponse = () => {
 
       const currentQuestion = questions[currentQuestionIndex];
 
-      // Log the full submission data
       const submissionData: QuizAnswerResponse = {
         phoneNumber,
         username,
-        questionId: currentQuestion.id,
+        questionId: currentQuestion.id!,
         selectedAnswer,
-        quizId: quizId,
+        quizId,
       };
 
       console.log('Full submission data:', submissionData);
@@ -202,7 +212,7 @@ const QuizResponse = () => {
     return (
       <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-sky-900 mb-6">
-          Welcome to the Quiz
+          Welcome to {quizData?.title || 'the Quiz'}
         </h2>
         <form onSubmit={handleUsernameSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -218,6 +228,16 @@ const QuizResponse = () => {
           <Button type="submit" className="w-full">
             Start Quiz
           </Button>
+          {quizData?.startTime && (
+            <p className="text-sm text-gray-600 mt-4">
+              Quiz starts at: {new Date(quizData.startTime).toLocaleString()}
+            </p>
+          )}
+          {quizData?.durationInSeconds && (
+            <p className="text-sm text-gray-600">
+              Duration: {Math.floor(quizData.durationInSeconds / 60)} minutes
+            </p>
+          )}
         </form>
       </div>
     );

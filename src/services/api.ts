@@ -5,16 +5,25 @@ export const BASE_URL = getBackendUrl();
 
 console.log('API Service initialized with BASE_URL:', BASE_URL);
 
-export interface Question {
-  id: number;
+export interface Option {
   text: string;
-  options: { text: string }[];
+  correct: boolean;
 }
 
-interface QuestionResponse {
-  id: number;
+export interface Question {
+  id?: number;
   text: string;
-  options?: { text: string }[];
+  options: Option[];
+}
+
+export interface QuizDTO {
+  id: number;
+  title: string;
+  durationInSeconds: number;
+  startTime: string;
+  closed: boolean;
+  questions: Question[];
+  participants: { phoneNumber: string }[];
 }
 
 export interface QuizAnswerResponse {
@@ -25,7 +34,6 @@ export interface QuizAnswerResponse {
   quizId: number;
 }
 
-// Updated to match Spring's JSON response structure
 export interface QuizResponseData {
   id: number;
   createdAt: string;
@@ -55,28 +63,28 @@ export interface ResultsResponse {
 
 const api = {
   getQuestions: async (quizId: string | number): Promise<Question[]> => {
-    const numericQuizId = typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
-    
-    const url = `${BASE_URL}/api/quizzes/${numericQuizId}`.replace(/([^:]\/)\/+/g, '$1');
+    const numericQuizId =
+      typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
+
+    const url = `${BASE_URL}/api/quizzes/${numericQuizId}`.replace(
+      /([^:]\/)\/+/g,
+      '$1',
+    );
     console.log('getQuestions - Full URL:', url);
     console.log('getQuestions - Headers:', {
       'Content-Type': 'application/json',
     });
 
     try {
-      const response = await axios.get(url);
+      const response = await axios.get<QuizDTO>(url);
       console.log('getQuestions - Raw Response:', response);
 
-      // Handle both response formats - direct questions array or nested in quiz object
-      const questions = Array.isArray(response.data)
-        ? response.data
-        : response.data.questions || [];
+      if (!response.data || !response.data.questions) {
+        console.error('Invalid quiz data structure:', response.data);
+        throw new Error('Invalid quiz data received from server');
+      }
 
-      return questions.map((q: QuestionResponse) => ({
-        id: q.id,
-        text: q.text,
-        options: q.options || [],
-      }));
+      return response.data.questions;
     } catch (error) {
       if (error instanceof AxiosError) {
         console.error('getQuestions - Error:', {
@@ -114,9 +122,13 @@ const api = {
     page: number = 0,
     size: number = 10,
   ): Promise<ResultsResponse> => {
-    const numericQuizId = typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
-    
-    const url = `${BASE_URL}/api/responses/results/${numericQuizId}`.replace(/([^:]\/)\/+/g, '$1');
+    const numericQuizId =
+      typeof quizId === 'string' ? parseInt(quizId, 10) : quizId;
+
+    const url = `${BASE_URL}/api/responses/results/${numericQuizId}`.replace(
+      /([^:]\/)\/+/g,
+      '$1',
+    );
     console.log('getResults - Full URL:', url);
     console.log('getResults - Query Params:', { page, size });
 
