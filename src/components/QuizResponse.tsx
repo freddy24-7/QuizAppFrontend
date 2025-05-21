@@ -45,6 +45,12 @@ const QuizResponse = () => {
         const response = await api.getQuestions(quizId);
         console.log('Successfully fetched quiz details:', response);
 
+        // Check for null/empty response
+        if (!response || (typeof response === 'object' && Object.values(response).every(val => val === null))) {
+          console.error('Server returned empty or null quiz data');
+          throw new Error('Quiz not found or no longer available');
+        }
+
         // Type guard to check if response is a QuizDTO
         const isQuizDTO = (data: any): data is QuizDTO => {
           return (
@@ -88,11 +94,14 @@ const QuizResponse = () => {
             message: err.message,
             stack: err.stack,
           });
+          // Set user-friendly error message
+          setError(err.message === 'Quiz not found or no longer available' 
+            ? 'This quiz is no longer available. Please check with the quiz organizer.'
+            : 'Unable to load the quiz at this time. Please try again later or contact support.');
         }
-        setError(
-          'Failed to load quiz details. Please check the quiz link and try again.',
-        );
         setIsLoading(false);
+        // Show error toast
+        toast.error('Failed to load quiz. Please try again later.');
       }
     };
     fetchQuizDetails();
