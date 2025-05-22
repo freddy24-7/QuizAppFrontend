@@ -120,7 +120,7 @@ const QuizResponse = () => {
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      toast.error('Please enter a username');
+      toast.error('Please enter a your name');
       return;
     }
 
@@ -258,7 +258,7 @@ const QuizResponse = () => {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              placeholder="Enter your name"
               required
             />
           </div>
