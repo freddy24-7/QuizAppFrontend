@@ -238,11 +238,13 @@ const QuizForm = () => {
         participants: [{ phoneNumber: '' }],
       });
     } catch (err) {
-      let msg = 'Failed to create quiz';
+      let msg = 'We could not create the quiz right now.';
       if (axios.isAxiosError(err)) {
         msg = err.response?.data?.message || msg;
       }
-      toast.error(msg);
+      toast.error(
+        `${msg} Because this is a demo environment, the server may need a few seconds to wake up. Please wait a short while and click "Create Quiz" again. It usually works after one or two attempts.`,
+      );
     }
   };
 

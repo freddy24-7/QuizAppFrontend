@@ -44,6 +44,14 @@ const ParticipantsStep: React.FC<Props> = ({
         </p>
       </div>
 
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+        <p className="text-amber-800 text-sm">
+          Because this is a demo environment, the quiz server may need a few
+          seconds to wake up. If you see an error right after clicking Create
+          Quiz, wait a few seconds and try again once or twice.
+        </p>
+      </div>
+
       {participants.map((p, i) => (
         <div key={i} className="flex items-center space-x-4">
           <div className="flex-1">
